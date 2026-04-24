@@ -46,6 +46,46 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = 'Digite seu email para recuperar a senha.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        setState(() => _loading = false);
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1D27),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Email enviado',
+                style: TextStyle(color: Color(0xFFE2E8F0))),
+            content: Text(
+              'Enviamos um link de recuperacao para $email.\n\n'
+              'Verifique sua caixa de entrada e pasta de spam.\n\n'
+              'Clique no link do email para definir uma nova senha e depois volte para fazer login.',
+              style: const TextStyle(color: Color(0xFF64748B))),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK', style: TextStyle(color: Color(0xFF6366F1))),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = 'Erro ao enviar email. Tente novamente.';
+        _loading = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -251,6 +291,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 8),
+
+              if (!_isRegister)
+                TextButton(
+                  onPressed: _forgotPassword,
+                  child: const Text('Esqueci minha senha',
+                      style: TextStyle(color: kMuted, fontSize: 13)),
+                ),
 
               TextButton(
                 onPressed: () => setState(() {
