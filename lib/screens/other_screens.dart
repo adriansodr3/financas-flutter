@@ -10,10 +10,11 @@ import 'tx_action_sheet.dart';
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
   @override
-  State<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<TransactionsScreen> createState() => TransactionsScreenState();
 }
 
-class _TransactionsScreenState extends State<TransactionsScreen> {
+class TransactionsScreenState extends State<TransactionsScreen> {
+  void load() { _load(); }
   int _year = DateTime.now().year, _month = DateTime.now().month;
   List<Transaction> _txs = [];
   bool _loading = true;
@@ -93,10 +94,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 class FixedScreen extends StatefulWidget {
   const FixedScreen({super.key});
   @override
-  State<FixedScreen> createState() => _FixedScreenState();
+  State<FixedScreen> createState() => FixedScreenState();
 }
 
-class _FixedScreenState extends State<FixedScreen> {
+class FixedScreenState extends State<FixedScreen> {
+  void load() { _load(); }
   List<FixedExpense> _items = [];
   bool _loading = true;
 
@@ -275,10 +277,11 @@ class _FixedScreenState extends State<FixedScreen> {
 class InstallmentsScreen extends StatefulWidget {
   const InstallmentsScreen({super.key});
   @override
-  State<InstallmentsScreen> createState() => _InstallmentsScreenState();
+  State<InstallmentsScreen> createState() => InstallmentsScreenState();
 }
 
-class _InstallmentsScreenState extends State<InstallmentsScreen> {
+class InstallmentsScreenState extends State<InstallmentsScreen> {
+  void load() { _load(); }
   List<Installment> _items = [];
   bool _loading = true;
   Installment? _undoInst;

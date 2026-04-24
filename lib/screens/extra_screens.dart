@@ -12,10 +12,11 @@ import '../widgets/widgets.dart';
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  State<ReportsScreen> createState() => ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
+class ReportsScreenState extends State<ReportsScreen> {
+  void load() { _load(); }
   int _year = DateTime.now().year, _month = DateTime.now().month;
   String _showType = 'expense';
   List<Map<String, dynamic>> _summary = [];
@@ -196,10 +197,11 @@ const _kIcons = <String, IconData>{
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
   @override
-  State<CategoriesScreen> createState() => _CategoriesScreenState();
+  State<CategoriesScreen> createState() => CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class CategoriesScreenState extends State<CategoriesScreen> {
+  void load() { _load(); }
   List<Category> _cats = [];
   bool _loading = true;
 
@@ -337,10 +339,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
+  void refresh() { setState(() {}); }
   final _sb = Supabase.instance.client;
   String get _email => _sb.auth.currentUser?.email ?? '—';
 
