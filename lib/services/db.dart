@@ -295,7 +295,18 @@ class DB {
     String? categoryId,
     required String type,
   }) async {
-    await deleteFixedMonth(txId, fixedExpenseId, year, month);
+    final monthStr = '\${year.toString().padLeft(4,"0")}-\${month.toString().padLeft(2,"0")}';
+    // Registrar skip (ignorar se ja existe)
+    try {
+      await _sb.from('fixed_skipped').insert({
+        'user_id': uid,
+        'fixed_expense_id': fixedExpenseId,
+        'month': monthStr,
+      });
+    } catch (_) {}
+    // Deletar a transaction fixa do mes
+    await _sb.from('transactions').delete().eq('id', txId).eq('user_id', uid);
+    // Criar novo lancamento avulso com os valores editados
     await createTransaction(
       type: type,
       amount: amount,
