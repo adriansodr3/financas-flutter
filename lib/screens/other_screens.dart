@@ -147,45 +147,85 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
 
   Future<void> _editInstallment(Installment inst) async {
     final descCtrl = TextEditingController(text: inst.description);
+    final amtCtrl  = TextEditingController(text: inst.installmentAmount.toStringAsFixed(2));
+    final parcCtrl = TextEditingController(text: inst.totalParcelas.toString());
     Category? selCat;
+    String dateStr = inst.startDate;
 
     await showModalBottomSheet(
       context: context, isScrollControlled: true,
-      builder: (ctx) => Padding(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Editar Parcelamento',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
-            const SizedBox(height: 6),
-            Text('${inst.totalParcelas}x de ${fmtCurrency(inst.installmentAmount)}',
-                style: const TextStyle(fontSize: 12, color: kMuted)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            const Text('Atualiza descricao, valor e numero de parcelas em todos os meses.',
+                style: TextStyle(fontSize: 12, color: kMuted)),
             const SizedBox(height: 16),
             TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao')),
             const SizedBox(height: 12),
-            CategorySelector(
-              type: 'expense',
-              initial: null,
-              onChanged: (c) => selCat = c,
+            Row(children: [
+              Expanded(child: TextField(
+                controller: amtCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Valor parcela', prefixText: 'R\$ '))),
+              const SizedBox(width: 12),
+              Expanded(child: TextField(
+                controller: parcCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Nº parcelas'))),
+            ]),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: DateTime.tryParse(dateStr) ?? DateTime.now(),
+                  firstDate: DateTime(2020), lastDate: DateTime(2035),
+                  builder: (c, child) => Theme(
+                    data: Theme.of(c).copyWith(colorScheme: const ColorScheme.dark(primary: kPurple, surface: kSurface)),
+                    child: child!));
+                if (picked != null) setSt(() => dateStr = '\${picked.year}-\${picked.month.toString().padLeft(2,"0")}-01');
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: kBorder),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Row(children: [
+                  const Icon(Icons.calendar_today_outlined, color: kMuted, size: 18),
+                  const SizedBox(width: 10),
+                  Text('Inicio: \$dateStr'),
+                ]),
+              ),
             ),
+            const SizedBox(height: 16),
+            CategorySelector(type: 'expense', onChanged: (c) => selCat = c),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: ElevatedButton(
               onPressed: () async {
-                if (descCtrl.text.trim().isEmpty) return;
-                await DB.editInstallment(
+                final amt  = double.tryParse(amtCtrl.text.replaceAll(',','.'));
+                final nPar = int.tryParse(parcCtrl.text);
+                if (descCtrl.text.trim().isEmpty || amt == null || nPar == null || nPar < 1) return;
+                await DB.updateInstallmentFull(
                   instId: inst.id,
                   description: descCtrl.text.trim(),
+                  newAmount: amt,
+                  newParcelas: nPar,
+                  startDate: dateStr,
                   categoryId: selCat?.id ?? inst.categoryId,
                 );
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
                 _load();
               },
               child: const Text('Salvar'),
             )),
           ]),
         ),
-      ),
+      )),
     );
   }
 
@@ -312,17 +352,6 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                             Expanded(child: _miniCard('Falta', pending, kOrange)),
                           ]),
                           const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            onPressed: () => _editInstallment(inst),
-                            icon: const Icon(Icons.edit_outlined, size: 16),
-                            label: const Text('Editar parcelamento'),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: kPurple),
-                              foregroundColor: kPurple,
-                              minimumSize: const Size(double.infinity, 36),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
                           Row(children: [
                             Expanded(child: OutlinedButton(
                               onPressed: () => _settle(inst),

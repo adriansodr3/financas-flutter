@@ -630,30 +630,40 @@ class DB {
     required String instId,
     required String description,
     required double newAmount,
+    required int newParcelas,
+    required String startDate,
     String? categoryId,
   }) async {
+    // Deletar todas as parcelas antigas
+    await _sb.from('transactions')
+        .delete()
+        .eq('installment_id', instId)
+        .eq('user_id', uid);
     // Atualizar registro principal
+    final totalAmount = newAmount * newParcelas;
     await _sb.from('installments').update({
       'description': description,
       'installment_amount': newAmount,
+      'total_amount': totalAmount,
+      'total_parcelas': newParcelas,
+      'start_date': startDate,
       'category_id': categoryId,
     }).eq('id', instId).eq('user_id', uid);
-    // Buscar total de parcelas
-    final inst = await _sb.from('installments')
-        .select('total_parcelas').eq('id', instId).single();
-    final total = inst['total_parcelas'] as int;
-    // Atualizar todas as parcelas
-    final parcelas = await _sb.from('transactions')
-        .select('id, installment_number')
-        .eq('installment_id', instId)
-        .eq('user_id', uid);
-    for (final p in parcelas as List) {
-      final n = p['installment_number'] as int;
-      await _sb.from('transactions').update({
-        'description': '$description ($n/$total)',
-        'amount': newAmount,
+    // Recriar parcelas com novos valores
+    var dt = DateTime.parse(startDate.length == 7 ? '\$startDate-01' : startDate);
+    for (int i = 0; i < newParcelas; i++) {
+      final dateStr = '\${dt.year}-\${dt.month.toString().padLeft(2,"0")}-01';
+      await _sb.from('transactions').insert({
+        'user_id': uid,
         'category_id': categoryId,
-      }).eq('id', p['id']).eq('user_id', uid);
+        'type': 'expense',
+        'amount': newAmount,
+        'description': '\$description (\${i+1}/\$newParcelas)',
+        'date': dateStr,
+        'installment_id': instId,
+        'installment_number': i + 1,
+      });
+      dt = DateTime(dt.year, dt.month + 1, 1);
     }
   }
 }
