@@ -8,14 +8,12 @@ class DB {
   // ── Categories ────────────────────────────────────────────
 
   static Future<List<Category>> getCategories({String? type}) async {
-    var q = _sb
-        .from('categories')
-        .select()
-        .eq('user_id', uid)
-        .order('type')
-        .order('name');
-    if (type != null) q = q.eq('type', type) as dynamic;
-    final data = await q;
+    var q = _sb.from('categories').select().eq('user_id', uid);
+    if (type != null) {
+      final data = await q.eq('type', type).order('name');
+      return (data as List).map((m) => Category.fromMap(m)).toList();
+    }
+    final data = await q.order('type').order('name');
     return (data as List).map((m) => Category.fromMap(m)).toList();
   }
 
@@ -108,7 +106,10 @@ class DB {
         .eq('type', 'expense')
         .eq('is_fixed', false)
         .gte('date', cutoff);
-    return (data as List).fold(0.0, (s, r) => s + (r['amount'] as num).toDouble());
+    final list = data as List;
+    double total = 0.0;
+    for (final r in list) { total += (r['amount'] as num).toDouble(); }
+    return total;
   }
 
   static Future<void> createTransaction({

@@ -18,7 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool _loading = true;
   List<Transaction> _txs = [];
-  double _income = 0, _expense = 0, _prevBal = 0, _fixed = 0, _pending = 0;
+  double _income = 0, _expense = 0, _fixed = 0, _pending = 0;
 
   @override
   void initState() {
@@ -49,7 +49,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _txs     = txs;
           _income  = inc + (prev > 0 ? prev : 0);
           _expense = exp;
-          _prevBal = prev;
           _fixed   = fixedExp;
           _pending = pend;
           _loading = false;

@@ -282,7 +282,6 @@ class _InstallmentsScreenState extends State<InstallmentsScreen> {
   List<Installment> _items = [];
   bool _loading = true;
   Installment? _undoInst;
-  double _undoAmt = 0;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -305,7 +304,7 @@ class _InstallmentsScreenState extends State<InstallmentsScreen> {
     );
     if (ok != true) return;
     final settled = await DB.settleInstallment(inst);
-    setState(() { _undoInst = inst; _undoAmt = settled; });
+    setState(() { _undoInst = inst; });
     _load();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

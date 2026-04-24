@@ -20,7 +20,7 @@ ThemeData appTheme() {
       primary: kPurple,
       secondary: kGreen,
       surface: kSurface,
-      background: kBg,
+      surface: kBg,
       error: kRed,
       onPrimary: Colors.white,
       onSurface: kText,
@@ -67,7 +67,7 @@ ThemeData appTheme() {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: kSurface,
       indicatorColor: kPurple.withOpacity(0.2),
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         const TextStyle(fontSize: 11, color: kText),
       ),
     ),
