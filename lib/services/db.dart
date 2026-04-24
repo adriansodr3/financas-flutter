@@ -270,12 +270,17 @@ class DB {
   static Future<void> deleteFixedMonth(
       String txId, String fixedExpenseId, int year, int month) async {
     final monthStr = '${year.toString().padLeft(4,'0')}-${month.toString().padLeft(2,'0')}';
-    // atomic: skip first, then delete
-    await _sb.from('fixed_skipped').upsert({
-      'user_id': uid,
-      'fixed_expense_id': fixedExpenseId,
-      'month': monthStr,
-    });
+    // 1. Registrar skip (ignorar se ja existe)
+    try {
+      await _sb.from('fixed_skipped').insert({
+        'user_id': uid,
+        'fixed_expense_id': fixedExpenseId,
+        'month': monthStr,
+      });
+    } catch (_) {
+      // Ja existe — ok, continua
+    }
+    // 2. Deletar a transaction do mes
     await _sb.from('transactions').delete().eq('id', txId).eq('user_id', uid);
   }
 
