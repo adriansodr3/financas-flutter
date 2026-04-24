@@ -188,7 +188,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                   builder: (c, child) => Theme(
                     data: Theme.of(c).copyWith(colorScheme: const ColorScheme.dark(primary: kPurple, surface: kSurface)),
                     child: child!));
-                if (picked != null) setSt(() => dateStr = '\${picked.year}-\${picked.month.toString().padLeft(2,"0")}-01');
+                if (picked != null) setSt(() => dateStr = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-01');
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -198,7 +198,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                 child: Row(children: [
                   const Icon(Icons.calendar_today_outlined, color: kMuted, size: 18),
                   const SizedBox(width: 10),
-                  Text('Inicio: \$dateStr'),
+                  Text('Inicio: $dateStr'),
                 ]),
               ),
             ),
@@ -274,7 +274,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                     child: child!),
                 );
                 if (picked != null) {
-                  dateCtrl.text = '\${picked.year}-\${picked.month.toString().padLeft(2,"0")}-01';
+                  dateCtrl.text = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-01';
                 }
               },
               decoration: const InputDecoration(

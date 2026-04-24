@@ -296,7 +296,7 @@ class DB {
     String? categoryId,
     required String type,
   }) async {
-    final monthStr = '\${year.toString().padLeft(4,"0")}-\${month.toString().padLeft(2,"0")}';
+    final monthStr = '${year.toString().padLeft(4, "0")}-${month.toString().padLeft(2, "0")}';
     // Registrar skip (ignorar se ja existe)
     try {
       await _sb.from('fixed_skipped').insert({
@@ -480,7 +480,7 @@ class DB {
     for (final p in parcelas as List) {
       final n = p['installment_number'] as int;
       await _sb.from('transactions').update({
-        'description': '\$description (\$n/\$total)',
+        'description': '$description ($n/$total)',
       }).eq('id', p['id']);
     }
   }
@@ -569,13 +569,13 @@ class DB {
             .eq('user_id', uid)
             .eq('type', 'expense')
             .eq('date', date)
-            .eq('description', 'Investimento: \$name');
+            .eq('description', 'Investimento: $name');
       } else if (type == 'resgate') {
         await _sb.from('transactions').delete()
             .eq('user_id', uid)
             .eq('type', 'income')
             .eq('date', date)
-            .eq('description', 'Resgate: \$name');
+            .eq('description', 'Resgate: $name');
       }
     }
     // Deletar o investimento
@@ -670,15 +670,15 @@ class DB {
       'category_id': categoryId,
     }).eq('id', instId).eq('user_id', uid);
     // Recriar parcelas com novos valores
-    var dt = DateTime.parse(startDate.length == 7 ? '\$startDate-01' : startDate);
+    var dt = DateTime.parse(startDate.length == 7 ? '$startDate-01' : startDate);
     for (int i = 0; i < newParcelas; i++) {
-      final dateStr = '\${dt.year}-\${dt.month.toString().padLeft(2,"0")}-01';
+      final dateStr = '${dt.year}-${dt.month.toString().padLeft(2,"0")}-01';
       await _sb.from('transactions').insert({
         'user_id': uid,
         'category_id': categoryId,
         'type': 'expense',
         'amount': newAmount,
-        'description': '\$description (\${i+1}/\$newParcelas)',
+        'description': '$description (${i+1}/$newParcelas)',
         'date': dateStr,
         'installment_id': instId,
         'installment_number': i + 1,
