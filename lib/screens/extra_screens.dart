@@ -131,7 +131,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
                                 Expanded(child: Text(s['name'] as String,
-                                    style: const TextStyle(fontSize: 13, color: kText))),
+                                    style: const TextStyle(fontSize: 13))),
                                 Text('${(pct*100).toStringAsFixed(1)}%  •  ${fmtCurrency(s["total"] as double)}',
                                     style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
                               ]),
@@ -226,7 +226,7 @@ class CategoriesScreenState extends State<CategoriesScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24,20,24,40),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Nova Categoria', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+            const Text('Nova Categoria', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nome')),
             const SizedBox(height: 12),
@@ -290,7 +290,7 @@ class CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Categorias', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Categorias', style: TextStyle(fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: _loading
       ? const Center(child: CircularProgressIndicator(color: kPurple))
@@ -312,7 +312,7 @@ class CategoriesScreenState extends State<CategoriesScreen> {
                     decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
                     child: Icon(ico, color: color, size: 20),
                   ),
-                  title: Text(c.name, style: const TextStyle(fontSize: 14, color: kText)),
+                  title: Text(c.name, style: const TextStyle(fontSize: 14)),
                   subtitle: Text(isInc ? 'Entrada' : 'Despesa', style: const TextStyle(fontSize: 12, color: kMuted)),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: kMuted),
@@ -364,7 +364,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24,20,24,40),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Alterar Senha', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+            const Text('Alterar Senha', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             TextField(controller: ctrl, obscureText: true, decoration: const InputDecoration(labelText: 'Nova senha')),
             const SizedBox(height: 12),
@@ -388,7 +388,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Perfil', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Perfil', style: TextStyle(fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: ListView(padding: const EdgeInsets.all(20), children: [
       // Avatar
@@ -399,7 +399,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         child: const Icon(Icons.person_outline, color: kPurple, size: 40),
       )),
       const SizedBox(height: 12),
-      Center(child: Text(_email, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kText))),
+      Center(child: Text(_email, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
       const SizedBox(height: 4),
       const Center(child: Text('Dados sincronizados na nuvem', style: TextStyle(fontSize: 12, color: kMuted))),
       const SizedBox(height: 32),
@@ -408,7 +408,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       Card(child: Column(children: [
         ListTile(
           leading: const Icon(Icons.lock_outline, color: kPurple),
-          title: const Text('Alterar Senha', style: TextStyle(color: kText)),
+          title: const Text('Alterar Senha', style: TextStyle()),
           trailing: const Icon(Icons.chevron_right, color: kMuted),
           onTap: _changePassword,
         ),
@@ -417,7 +417,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           valueListenable: themeNotifier,
           builder: (_, mode, __) => ListTile(
             leading: Icon(mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: kMuted),
-            title: Text(mode == ThemeMode.dark ? 'Tema: Escuro' : 'Tema: Claro', style: const TextStyle(color: kText)),
+            title: Text(mode == ThemeMode.dark ? 'Tema: Escuro' : 'Tema: Claro', style: const TextStyle()),
             trailing: Switch(
               value: mode == ThemeMode.dark,
               onChanged: (v) => themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light,
@@ -428,7 +428,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         const Divider(height: 1, color: kBorder),
         ListTile(
           leading: const Icon(Icons.info_outline, color: kMuted),
-          title: const Text('Versao', style: TextStyle(color: kText)),
+          title: const Text('Versao', style: TextStyle()),
           trailing: const Text('2.0.0', style: TextStyle(color: kMuted)),
         ),
       ])),

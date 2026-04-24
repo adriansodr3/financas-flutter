@@ -113,7 +113,7 @@ class _TxFormSheetState extends State<TxFormSheet> {
               Container(width: 4, height: 28,
                 decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 10),
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             ]),
             const SizedBox(height: 20),
             TextField(

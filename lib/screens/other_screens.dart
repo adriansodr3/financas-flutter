@@ -245,7 +245,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24,20,24,40),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Novo Parcelamento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+            const Text('Novo Parcelamento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao (ex: Notebook)')),
             const SizedBox(height: 12),
@@ -314,7 +314,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Parcelamentos', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Parcelamentos', style: TextStyle(fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: _loading
       ? const Center(child: CircularProgressIndicator(color: kPurple))
@@ -339,7 +339,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Row(children: [
                             Expanded(child: Text(inst.description,
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: kText))),
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
                             Text(inst.categoryName ?? '', style: const TextStyle(fontSize: 11, color: kMuted)),
                           ]),
                           const SizedBox(height: 4),

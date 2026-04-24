@@ -77,7 +77,7 @@ class TxTile extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: kText),
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
@@ -139,7 +139,7 @@ class MonthNav extends StatelessWidget {
               '${_months[month]} $year',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600, color: kText),
+                  fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
           if (onToday != null)
@@ -192,7 +192,7 @@ Future<bool?> confirmSheet(
         children: [
           Text(title,
               style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+                  fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Text(body, style: const TextStyle(color: kMuted)),
           const SizedBox(height: 24),

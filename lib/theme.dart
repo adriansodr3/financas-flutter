@@ -81,7 +81,8 @@ ThemeData appThemeLight() {
       error: kRed, onPrimary: Colors.white, onSurface: textLight),
     scaffoldBackgroundColor: bgLight,
     textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
-      bodyColor: textLight, displayColor: textLight),
+      bodyColor: textLight, displayColor: textLight,
+      decorationColor: textLight),
     cardTheme: CardTheme(
       color: cardLight, elevation: 0,
       shape: RoundedRectangleBorder(
@@ -95,6 +96,8 @@ ThemeData appThemeLight() {
       focusedBorder:  OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kPurple, width: 2)),
       labelStyle: const TextStyle(color: textDimLight),
       hintStyle:  const TextStyle(color: textDimLight),
+      prefixStyle: const TextStyle(color: textLight),
+      suffixStyle: const TextStyle(color: textLight),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
       backgroundColor: kPurple, foregroundColor: Colors.white,

@@ -86,7 +86,7 @@ class _CategoryPickerState extends State<CategorySelector> {
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 const Expanded(child: Text('Nova Categoria',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText))),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
                 IconButton(icon: const Icon(Icons.close, color: kMuted), onPressed: () => Navigator.pop(ctx)),
               ]),
               const SizedBox(height: 12),

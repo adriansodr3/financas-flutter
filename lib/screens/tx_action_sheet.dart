@@ -28,7 +28,7 @@ class TxActionSheet extends StatelessWidget {
           Container(width: 4, height: 40, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${tx.description ?? "—"}${tx.badge}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kText)),
+            Text('${tx.description ?? "—"}${tx.badge}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             Text('${fmtDate(tx.date)}  •  ${tx.categoryName ?? "—"}', style: const TextStyle(fontSize: 12, color: kMuted)),
           ])),
           Text(fmtCurrency(tx.amount), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),

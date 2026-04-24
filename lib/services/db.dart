@@ -554,12 +554,32 @@ class DB {
   }
 
   static Future<void> deleteInvestment(String id) async {
+    // Buscar os dados do investimento antes de deletar
+    final rows = await _sb.from('investments')
+        .select('name, type, date')
+        .eq('id', id).eq('user_id', uid);
+    if ((rows as List).isNotEmpty) {
+      final inv = rows.first;
+      final name = inv['name'] as String;
+      final type = inv['type'] as String;
+      final date = inv['date'] as String;
+      // Deletar a transaction correspondente gerada automaticamente
+      if (type == 'aporte') {
+        await _sb.from('transactions').delete()
+            .eq('user_id', uid)
+            .eq('type', 'expense')
+            .eq('date', date)
+            .eq('description', 'Investimento: \$name');
+      } else if (type == 'resgate') {
+        await _sb.from('transactions').delete()
+            .eq('user_id', uid)
+            .eq('type', 'income')
+            .eq('date', date)
+            .eq('description', 'Resgate: \$name');
+      }
+    }
+    // Deletar o investimento
     await _sb.from('investments').delete().eq('id', id).eq('user_id', uid);
-    // Remover lançamentos gerados pelo aporte/resgate
-    // (identificados pela descrição que começa com "Investimento:" ou "Resgate:")
-    // Busca as transactions vinculadas por nome - limitado ao mesmo dia
-    // Melhor: deletar qualquer transaction criada automaticamente para este investimento
-    // Como não temos foreign key direto, buscamos por description pattern
   }
 
   // ── Advance payment (adiantar para mês atual) ─────────────

@@ -55,7 +55,7 @@ class FixedScreenState extends State<FixedScreen> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24,20,24,40), child: Column(
           mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Editar Fixo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+          const Text('Editar Fixo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           const Text('Novos valores aplicam do mês atual em diante.', style: TextStyle(fontSize: 12, color: kMuted)),
           const SizedBox(height: 16),
@@ -96,7 +96,7 @@ class FixedScreenState extends State<FixedScreen> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24,20,24,40), child: Column(
           mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Novo Fixo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+          const Text('Novo Fixo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
           // Tipo
           Row(children: [
@@ -133,7 +133,7 @@ class FixedScreenState extends State<FixedScreen> {
                 const Icon(Icons.calendar_today_outlined, color: kMuted, size: 18), const SizedBox(width: 10),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Valido a partir de', style: TextStyle(fontSize: 11, color: kMuted)),
-                  Text(DateFormat('MM/yyyy').format(DateTime.parse(dateStr)), style: const TextStyle(color: kText)),
+                  Text(DateFormat('MM/yyyy').format(DateTime.parse(dateStr)), style: const TextStyle()),
                 ]),
               ])),
           ),
@@ -157,7 +157,7 @@ class FixedScreenState extends State<FixedScreen> {
     final cats = _catOptions;
     return Scaffold(
             appBar: AppBar(elevation: 0,
-        title: const Text('Gastos e Receitas Fixos', style: TextStyle(color: kText, fontSize: 16)),
+        title: const Text('Gastos e Receitas Fixos', style: TextStyle(fontSize: 16)),
         actions: [
           // Filtro por categoria
           if (cats.isNotEmpty) PopupMenuButton<String?>(
@@ -197,14 +197,14 @@ class FixedScreenState extends State<FixedScreen> {
                     leading: Container(width: 40, height: 40,
                       decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
                       child: Icon(isInc ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 18)),
-                    title: Text(f.description, style: const TextStyle(fontSize: 14, color: kText)),
+                    title: Text(f.description, style: const TextStyle(fontSize: 14)),
                     subtitle: Text('${f.categoryName ?? "—"}  •  ${fmtCurrency(f.amount)}/mes', style: const TextStyle(fontSize: 12, color: kMuted)),
                     trailing: PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, color: kMuted),
                       color: kSurface,
                       onSelected: (v) { if(v=='edit') _editFixed(f); else _deactivateForward(f); },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, color: kPurple, size: 18), SizedBox(width: 8), Text('Editar', style: TextStyle(color: kText))])),
+                        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, color: kPurple, size: 18), SizedBox(width: 8), Text('Editar', style: TextStyle())])),
                         const PopupMenuItem(value: 'del',  child: Row(children: [Icon(Icons.delete_outline, color: kRed, size: 18), SizedBox(width: 8), Text('Desativar', style: TextStyle(color: kRed))])),
                       ],
                     ),

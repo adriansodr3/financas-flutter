@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (_) => AlertDialog(
                 backgroundColor: kSurface,
                 title: const Text('Confirme seu email',
-                    style: TextStyle(color: kText)),
+                    style: TextStyle()),
                 content: Text(
                   'Enviamos um email de confirmacao para $email.\n\nClique no link e faca login.',
                   style: const TextStyle(color: kMuted)),
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               const Text('Financas Pessoais',
                   style: TextStyle(fontSize: 26,
-                      fontWeight: FontWeight.w700, color: kText)),
+                      fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               const Text('Controle financeiro com sync em nuvem',
                   style: TextStyle(fontSize: 13, color: kMuted)),
