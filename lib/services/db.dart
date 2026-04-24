@@ -318,6 +318,38 @@ class DB {
 
   // ── Installments ──────────────────────────────────────────
 
+  static Future<void> updateInstallment({
+    required String id,
+    required String description,
+    String? categoryId,
+  }) async {
+    // Atualiza o registro principal
+    await _sb.from('installments').update({
+      'description': description,
+      'category_id': categoryId,
+    }).eq('id', id).eq('user_id', uid);
+    // Atualiza category_id nas parcelas existentes
+    await _sb.from('transactions').update({
+      'category_id': categoryId,
+    }).eq('installment_id', id).eq('user_id', uid);
+    // Atualiza prefixo da descricao nas parcelas (mantendo o numero da parcela)
+    final parcelas = await _sb
+        .from('transactions')
+        .select('id, installment_number, description')
+        .eq('installment_id', id)
+        .eq('user_id', uid);
+    // Buscar total de parcelas
+    final inst = await _sb.from('installments').select('total_parcelas').eq('id', id).single();
+    final total = inst['total_parcelas'] as int;
+    for (final p in parcelas as List) {
+      final n = p['installment_number'] as int;
+      await _sb.from('transactions').update({
+        'description': '$description ($n/$total)',
+        'category_id': categoryId,
+      }).eq('id', p['id']).eq('user_id', uid);
+    }
+  }
+
   static Future<List<Installment>> getInstallments() async {
     final data = await _sb
         .from('installments')
@@ -416,6 +448,40 @@ class DB {
       categoryId: inst.categoryId,
     );
     return total;
+  }
+
+  static Future<void> editInstallment({
+    required String instId,
+    required String description,
+    String? categoryId,
+  }) async {
+    // Atualizar registro do parcelamento
+    await _sb.from('installments').update({
+      'description': description,
+      'category_id': categoryId,
+    }).eq('id', instId).eq('user_id', uid);
+    // Atualizar categoria das transactions vinculadas
+    await _sb.from('transactions')
+        .update({'category_id': categoryId})
+        .eq('installment_id', instId)
+        .eq('user_id', uid);
+    // Atualizar descrições (manter o padrão "desc (N/total)")
+    final parcelas = await _sb.from('transactions')
+        .select('id, installment_number')
+        .eq('installment_id', instId)
+        .eq('user_id', uid)
+        .order('installment_number');
+    final inst = await _sb.from('installments')
+        .select('total_parcelas')
+        .eq('id', instId)
+        .single();
+    final total = inst['total_parcelas'] as int;
+    for (final p in parcelas as List) {
+      final n = p['installment_number'] as int;
+      await _sb.from('transactions').update({
+        'description': '\$description (\$n/\$total)',
+      }).eq('id', p['id']);
+    }
   }
 
   static Future<void> cancelInstallment(String instId) async {

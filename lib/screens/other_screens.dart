@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
+import 'category_inline.dart';
 import '../widgets/widgets.dart';
+import '../widgets/category_picker.dart';
 import 'tx_form_sheet.dart';
 import 'tx_action_sheet.dart';
 
@@ -329,6 +331,50 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
     setState(() => _undoInst = null);
   }
 
+  Future<void> _editInstallment(Installment inst) async {
+    final descCtrl = TextEditingController(text: inst.description);
+    Category? selCat;
+
+    await showModalBottomSheet(
+      context: context, isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Editar Parcelamento',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+            const SizedBox(height: 6),
+            Text('${inst.totalParcelas}x de ${fmtCurrency(inst.installmentAmount)}',
+                style: const TextStyle(fontSize: 12, color: kMuted)),
+            const SizedBox(height: 16),
+            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao')),
+            const SizedBox(height: 12),
+            CategoryPicker(
+              type: 'expense',
+              initial: null,
+              onChanged: (c) => selCat = c,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton(
+              onPressed: () async {
+                if (descCtrl.text.trim().isEmpty) return;
+                await DB.editInstallment(
+                  instId: inst.id,
+                  description: descCtrl.text.trim(),
+                  categoryId: selCat?.id ?? inst.categoryId,
+                );
+                Navigator.pop(ctx);
+                _load();
+              },
+              child: const Text('Salvar'),
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _addInstallment() async {
     List<Category> cats = await DB.getCategories(type: 'expense');
     Category? selCat = cats.isNotEmpty ? cats.first : null;
@@ -358,33 +404,37 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                 decoration: const InputDecoration(labelText: 'Parcelas'))),
             ]),
             const SizedBox(height: 12),
-            TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Inicio (AAAA-MM-DD)')),
+            TextField(
+              controller: dateCtrl,
+              readOnly: true,
+              onTap: () async {
+                final initial = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: initial,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2035),
+                  builder: (c, child) => Theme(
+                    data: Theme.of(c).copyWith(colorScheme: const ColorScheme.dark(primary: kPurple, surface: kSurface)),
+                    child: child!),
+                );
+                if (picked != null) {
+                  dateCtrl.text = '\${picked.year}-\${picked.month.toString().padLeft(2,"0")}-01';
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'Inicio',
+                prefixIcon: Icon(Icons.calendar_today_outlined, color: kMuted),
+                suffixIcon: Icon(Icons.edit_calendar_outlined, color: kMuted),
+              ),
+            ),
             const SizedBox(height: 12),
-            if (cats.isNotEmpty) ...[
-              const Text('Categoria', style: TextStyle(fontSize: 12, color: kMuted)),
-              const SizedBox(height: 6),
-              SizedBox(height: 40, child: ListView.separated(
-                scrollDirection: Axis.horizontal, itemCount: cats.length,
-                separatorBuilder: (_,__)=>const SizedBox(width: 8),
-                itemBuilder: (_,i) {
-                  final c=cats[i]; final sel=selCat?.id==c.id;
-                  return GestureDetector(
-                    onTap: () => setSt(()=>selCat=c),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: sel ? kPurple.withOpacity(0.15) : kCard,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sel ? kPurple : kBorder),
-                      ),
-                      child: Text(c.name, style: TextStyle(fontSize: 12, color: sel?kPurple:kMuted)),
-                    ),
-                  );
-                },
-              )),
-              const SizedBox(height: 16),
-            ],
+            CategoryPicker(
+              type: 'expense',
+              initial: selCat,
+              onChanged: (c) { selCat = c; },
+            ),
+            const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: ElevatedButton(
               onPressed: () async {
                 final total = double.tryParse(totalCtrl.text.replaceAll(',','.'));
@@ -448,6 +498,17 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                             Expanded(child: _miniCard('Falta', pending, kOrange)),
                           ]),
                           const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: () => _editInstallment(inst),
+                            icon: const Icon(Icons.edit_outlined, size: 16),
+                            label: const Text('Editar parcelamento'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: kPurple),
+                              foregroundColor: kPurple,
+                              minimumSize: const Size(double.infinity, 36),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Row(children: [
                             Expanded(child: OutlinedButton(
                               onPressed: () => _settle(inst),
@@ -456,6 +517,12 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                             )),
                             const SizedBox(width: 8),
                             Expanded(child: OutlinedButton(
+                            const SizedBox(width: 8),
+                            Expanded(child: OutlinedButton(
+                              onPressed: () => _editInstallment(inst),
+                              style: OutlinedButton.styleFrom(side: const BorderSide(color: kPurple), foregroundColor: kPurple),
+                              child: const Text('Editar'),
+                            )),
                               onPressed: () async {
                                 final ok = await confirmSheet(context,
                                     title: 'Cancelar "${inst.description}"',
