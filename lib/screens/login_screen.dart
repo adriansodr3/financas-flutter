@@ -132,20 +132,6 @@ class _LoginScreenState extends State<LoginScreen> {
     try { await DB.seedDefaultCategories(); } catch (_) {}
   }
 
-  Future<void> _resetPassword() async {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty) {
-      setState(() => _error = 'Digite seu email primeiro.');
-      return;
-    }
-    try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email de recuperacao enviado!')));
-    } catch (_) {
-      setState(() => _error = 'Erro ao enviar email.');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
