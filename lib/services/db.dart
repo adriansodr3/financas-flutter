@@ -497,7 +497,6 @@ class DB {
         .eq('id', instId)
         .eq('user_id', uid);
   }
-}
 
   // ── Investments ──────────────────────────────────────────
 
@@ -652,3 +651,4 @@ class DB {
       }).eq('id', p['id']).eq('user_id', uid);
     }
   }
+}
