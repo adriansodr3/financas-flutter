@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../services/db.dart';
 
@@ -13,9 +14,37 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
   final _pass2Ctrl = TextEditingController();
-  bool _isRegister = false;
-  bool _loading    = false;
+  bool _isRegister   = false;
+  bool _loading      = false;
+  bool _rememberMe   = true;
+  bool _obscurePass  = true;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('saved_email') ?? '';
+    if (saved.isNotEmpty) {
+      setState(() {
+        _emailCtrl.text = saved;
+        _rememberMe = true;
+      });
+    }
+  }
+
+  Future<void> _saveEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('saved_email', email);
+    } else {
+      await prefs.remove('saved_email');
+    }
+  }
 
   @override
   void dispose() {
@@ -49,11 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
             email: email, password: pass);
 
         if (res.session == null && res.user != null) {
-          // Email confirmation required
-          setState(() {
-            _error = null;
-            _loading = false;
-          });
+          setState(() { _loading = false; });
           if (mounted) {
             showDialog(
               context: context,
@@ -62,8 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 title: const Text('Confirme seu email',
                     style: TextStyle(color: kText)),
                 content: Text(
-                  'Enviamos um email de confirmacao para $email.\n\n'
-                  'Clique no link do email e depois faca login.',
+                  'Enviamos um email de confirmacao para $email.\n\nClique no link e faca login.',
                   style: const TextStyle(color: kMuted)),
                 actions: [TextButton(
                   onPressed: () {
@@ -77,48 +101,35 @@ class _LoginScreenState extends State<LoginScreen> {
           }
           return;
         }
-        // Sessao imediata (email confirmation desativado no Supabase)
         if (res.session != null) {
-          await _seedAndNavigate();
+          await _saveEmail(email);
+          await _seedSafe();
           return;
         }
       } else {
-        final res = await Supabase.instance.client.auth.signInWithPassword(
+        await Supabase.instance.client.auth.signInWithPassword(
             email: email, password: pass);
-        if (res.session != null) {
-          await _seedAndNavigate();
-          return;
-        }
+        await _saveEmail(email);
+        await _seedSafe();
+        return;
       }
     } on AuthException catch (e) {
       String msg = e.message;
       if (msg.contains('Invalid login') || msg.contains('invalid_credentials')) {
         msg = 'Email ou senha incorretos.';
       }
-      if (msg.contains('already registered') || msg.contains('already been registered')) {
-        msg = 'Email ja cadastrado. Faca login.';
-      }
-      if (msg.contains('Email not confirmed')) {
-        msg = 'Email nao confirmado. Verifique sua caixa de entrada.';
-      }
+      if (msg.contains('already registered')) msg = 'Email ja cadastrado. Faca login.';
+      if (msg.contains('Email not confirmed')) msg = 'Confirme seu email antes de entrar.';
       setState(() { _error = msg; });
     } catch (e) {
-      setState(() { _error = 'Erro: ${e.toString().substring(0, 80)}'; });
+      setState(() { _error = 'Erro de conexao. Tente novamente.'; });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _seedAndNavigate() async {
-    try {
-      final uid = Supabase.instance.client.auth.currentUser?.id;
-      if (uid != null) {
-        await DB.seedDefaultCategories();
-      }
-    } catch (_) {
-      // Seed falhou — nao e critico, usuario pode criar categorias depois
-    }
-    // Navegacao feita pelo AuthGate automaticamente
+  Future<void> _seedSafe() async {
+    try { await DB.seedDefaultCategories(); } catch (_) {}
   }
 
   Future<void> _resetPassword() async {
@@ -129,11 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email de recuperacao enviado!')));
-      }
-    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email de recuperacao enviado!')));
+    } catch (_) {
       setState(() => _error = 'Erro ao enviar email.');
     }
   }
@@ -144,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: kBg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             children: [
               const SizedBox(height: 48),
@@ -160,15 +169,18 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
               const Text('Financas Pessoais',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: kText)),
+                  style: TextStyle(fontSize: 26,
+                      fontWeight: FontWeight.w700, color: kText)),
               const SizedBox(height: 4),
               const Text('Controle financeiro com sync em nuvem',
                   style: TextStyle(fontSize: 13, color: kMuted)),
               const SizedBox(height: 40),
 
-              TextField(
+              // Email
+              TextFormField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email_outlined, color: kMuted),
@@ -176,23 +188,34 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
 
-              TextField(
+              // Senha
+              TextFormField(
                 controller: _passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscurePass,
+                autofillHints: const [AutofillHints.password],
+                decoration: InputDecoration(
                   labelText: 'Senha',
-                  prefixIcon: Icon(Icons.lock_outlined, color: kMuted),
+                  prefixIcon: const Icon(Icons.lock_outlined, color: kMuted),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePass ? Icons.visibility_outlined
+                                   : Icons.visibility_off_outlined,
+                      color: kMuted),
+                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                  ),
                 ),
               ),
 
+              // Confirmar senha (cadastro)
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 child: _isRegister
                     ? Column(children: [
                         const SizedBox(height: 12),
-                        TextField(
+                        TextFormField(
                           controller: _pass2Ctrl,
                           obscureText: true,
+                          autofillHints: const [AutofillHints.newPassword],
                           decoration: const InputDecoration(
                             labelText: 'Confirmar Senha',
                             prefixIcon: Icon(Icons.lock_outline, color: kMuted),
@@ -202,7 +225,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const SizedBox.shrink(),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+
+              // Lembrar email
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) => setState(() => _rememberMe = v ?? true),
+                    activeColor: kPurple,
+                    side: const BorderSide(color: kMuted),
+                  ),
+                  const Text('Lembrar email',
+                      style: TextStyle(color: kMuted, fontSize: 13)),
+                ],
+              ),
+
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -211,15 +249,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center),
                 ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
-                      ? const SizedBox(
-                          width: 20, height: 20,
+                      ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
                       : Text(_isRegister ? 'Criar Conta' : 'Entrar',
@@ -227,25 +264,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               if (!_isRegister)
                 TextButton(
                   onPressed: _resetPassword,
                   child: const Text('Esqueci minha senha',
-                      style: TextStyle(color: kMuted)),
+                      style: TextStyle(color: kMuted, fontSize: 13)),
                 ),
 
               TextButton(
                 onPressed: () => setState(() {
-                  _isRegister = !_isRegister;
-                  _error = null;
+                  _isRegister = !_isRegister; _error = null;
                 }),
                 child: Text(
                   _isRegister ? 'Ja tenho conta' : 'Criar nova conta',
-                  style: const TextStyle(color: kPurple),
-                ),
+                  style: const TextStyle(color: kPurple)),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

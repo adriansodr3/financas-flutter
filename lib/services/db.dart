@@ -197,6 +197,9 @@ class DB {
   static Future<void> materializeFixed(int year, int month) async {
     final monthStr = '${year.toString().padLeft(4,'0')}-${month.toString().padLeft(2,'0')}';
     final firstDay = '$monthStr-01';
+    final nm = month == 12 ? 1 : month + 1;
+    final ny = month == 12 ? year + 1 : year;
+    final nextDay = '${ny.toString().padLeft(4,"0")}-${nm.toString().padLeft(2,"0")}-01';
 
     final fixed = await _sb
         .from('fixed_expenses')
@@ -223,7 +226,8 @@ class DB {
           .eq('user_id', uid)
           .eq('is_fixed', true)
           .eq('fixed_expense_id', fe['id'])
-          .like('date', '$monthStr%')
+          .gte('date', firstDay)
+          .lt('date', nextDay)
           .limit(1);
       if ((already as List).isNotEmpty) continue;
 

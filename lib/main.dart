@@ -111,9 +111,11 @@ class _MainShellState extends State<_MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _idx,
-        children: _screens,
+      body: SafeArea(
+        child: IndexedStack(
+          index: _idx,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _idx,

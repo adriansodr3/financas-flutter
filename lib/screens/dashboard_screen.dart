@@ -105,8 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: SafeArea(
-        child: Column(
+      body: Column(
           children: [
             MonthNav(
               year: _year, month: _month,
@@ -181,7 +180,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
             ),
           ],
-        ),
       ),
     );
   }
