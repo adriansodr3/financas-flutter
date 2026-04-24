@@ -107,7 +107,7 @@ class _MainShellState extends State<_MainShell> {
         onDestinationSelected: _onTabChange,
         backgroundColor: Theme.of(context).colorScheme.surface,
         indicatorColor: kPurple.withOpacity(0.2),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         height: 68,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined),        selectedIcon: Icon(Icons.home),              label: 'Inicio'),
