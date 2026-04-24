@@ -29,6 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _loading = true; _error = null; });
     final email = _emailCtrl.text.trim();
     final pass  = _passCtrl.text;
+
+    if (email.isEmpty || pass.isEmpty) {
+      setState(() { _error = 'Preencha todos os campos.'; _loading = false; });
+      return;
+    }
+
     try {
       if (_isRegister) {
         if (pass != _pass2Ctrl.text) {
@@ -39,23 +45,80 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() { _error = 'Minimo 6 caracteres.'; _loading = false; });
           return;
         }
-        await Supabase.instance.client.auth.signUp(
+        final res = await Supabase.instance.client.auth.signUp(
             email: email, password: pass);
-        await DB.seedDefaultCategories();
+
+        if (res.session == null && res.user != null) {
+          // Email confirmation required
+          setState(() {
+            _error = null;
+            _loading = false;
+          });
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                backgroundColor: kSurface,
+                title: const Text('Confirme seu email',
+                    style: TextStyle(color: kText)),
+                content: Text(
+                  'Enviamos um email de confirmacao para $email.\n\n'
+                  'Clique no link do email e depois faca login.',
+                  style: const TextStyle(color: kMuted)),
+                actions: [TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() => _isRegister = false);
+                  },
+                  child: const Text('OK', style: TextStyle(color: kPurple)),
+                )],
+              ),
+            );
+          }
+          return;
+        }
+        // Sessao imediata (email confirmation desativado no Supabase)
+        if (res.session != null) {
+          await _seedAndNavigate();
+          return;
+        }
       } else {
-        await Supabase.instance.client.auth.signInWithPassword(
+        final res = await Supabase.instance.client.auth.signInWithPassword(
             email: email, password: pass);
+        if (res.session != null) {
+          await _seedAndNavigate();
+          return;
+        }
       }
     } on AuthException catch (e) {
       String msg = e.message;
-      if (msg.contains('Invalid login')) msg = 'Email ou senha incorretos.';
-      if (msg.contains('already registered')) msg = 'Email ja cadastrado.';
+      if (msg.contains('Invalid login') || msg.contains('invalid_credentials')) {
+        msg = 'Email ou senha incorretos.';
+      }
+      if (msg.contains('already registered') || msg.contains('already been registered')) {
+        msg = 'Email ja cadastrado. Faca login.';
+      }
+      if (msg.contains('Email not confirmed')) {
+        msg = 'Email nao confirmado. Verifique sua caixa de entrada.';
+      }
       setState(() { _error = msg; });
     } catch (e) {
-      setState(() { _error = 'Erro: $e'; });
+      setState(() { _error = 'Erro: ${e.toString().substring(0, 80)}'; });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _seedAndNavigate() async {
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid != null) {
+        await DB.seedDefaultCategories();
+      }
+    } catch (_) {
+      // Seed falhou — nao e critico, usuario pode criar categorias depois
+    }
+    // Navegacao feita pelo AuthGate automaticamente
   }
 
   Future<void> _resetPassword() async {
@@ -64,10 +127,14 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _error = 'Digite seu email primeiro.');
       return;
     }
-    await Supabase.instance.client.auth.resetPasswordForEmail(email);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email de recuperacao enviado!')));
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email de recuperacao enviado!')));
+      }
+    } catch (e) {
+      setState(() => _error = 'Erro ao enviar email.');
     }
   }
 
@@ -99,7 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 13, color: kMuted)),
               const SizedBox(height: 40),
 
-              // Email
               TextField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
@@ -110,7 +176,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Senha
               TextField(
                 controller: _passCtrl,
                 obscureText: true,
@@ -120,7 +185,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // Confirmar senha (register)
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 child: _isRegister
@@ -149,7 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 12),
 
-              // Botão principal
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -166,7 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 12),
 
-              // Esqueci senha
               if (!_isRegister)
                 TextButton(
                   onPressed: _resetPassword,
@@ -174,9 +236,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(color: kMuted)),
                 ),
 
-              const SizedBox(height: 4),
-
-              // Toggle login / cadastro
               TextButton(
                 onPressed: () => setState(() {
                   _isRegister = !_isRegister;

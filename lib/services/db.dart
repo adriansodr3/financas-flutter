@@ -3,7 +3,11 @@ import '../models/models.dart';
 
 class DB {
   static final _sb = Supabase.instance.client;
-  static String get uid => _sb.auth.currentUser!.id;
+  static String get uid {
+    final user = _sb.auth.currentUser;
+    if (user == null) throw Exception('Usuario nao autenticado');
+    return user.id;
+  }
 
   // ── Categories ────────────────────────────────────────────
 
@@ -35,10 +39,12 @@ class DB {
   // ── Seed default categories on first login ────────────────
 
   static Future<void> seedDefaultCategories() async {
+    final user = _sb.auth.currentUser;
+    if (user == null) return; // sem sessao, nao faz nada
     final existing = await _sb
         .from('categories')
         .select('id')
-        .eq('user_id', uid)
+        .eq('user_id', user.id)
         .limit(1);
     if ((existing as List).isNotEmpty) return;
 
