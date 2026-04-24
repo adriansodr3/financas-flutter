@@ -252,13 +252,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 8),
 
-              if (!_isRegister)
-                TextButton(
-                  onPressed: _resetPassword,
-                  child: const Text('Esqueci minha senha',
-                      style: TextStyle(color: kMuted, fontSize: 13)),
-                ),
-
               TextButton(
                 onPressed: () => setState(() {
                   _isRegister = !_isRegister; _error = null;
