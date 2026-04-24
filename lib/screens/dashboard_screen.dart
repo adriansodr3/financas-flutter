@@ -105,100 +105,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: RefreshIndicator(
-        onRefresh: _load,
-        color: kPurple,
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              backgroundColor: kSurface,
-              pinned: true,
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.none,
-                background: MonthNav(
-                  year: _year, month: _month,
-                  onPrev: _prevMonth,
-                  onNext: _nextMonth,
-                  onToday: _today,
-                ),
-              ),
-              expandedHeight: 52,
-              toolbarHeight: 52,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MonthNav(
+              year: _year, month: _month,
+              onPrev: _prevMonth,
+              onNext: _nextMonth,
+              onToday: _today,
             ),
-            if (_loading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: kPurple)),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-
-                    // Cards linha 1
-                    Row(children: [
-                      Expanded(child: SummaryCard(
-                          label: 'ENTRADAS + SALDO ANT.', value: _income, color: kGreen)),
-                      const SizedBox(width: 8),
-                      Expanded(child: SummaryCard(
-                          label: 'SAIDAS DO MES', value: _expense, color: kRed)),
-                    ]),
-                    const SizedBox(height: 8),
-
-                    // Cards linha 2
-                    Row(children: [
-                      Expanded(child: SummaryCard(
-                          label: 'SALDO', value: _saldo,
-                          color: _saldo >= 0 ? kGreen : kRed)),
-                      const SizedBox(width: 8),
-                      Expanded(child: SummaryCard(
-                          label: 'FIXOS', value: _fixed, color: kRed)),
-                      const SizedBox(width: 8),
-                      Expanded(child: SummaryCard(
-                          label: 'FALTA PAGAR', value: _pending, color: kOrange)),
-                    ]),
-                    const SizedBox(height: 16),
-
-                    // Botões
-                    Row(children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openTxForm('income'),
-                          icon: const Icon(Icons.arrow_upward, size: 16),
-                          label: const Text('Entrada'),
-                          style: ElevatedButton.styleFrom(backgroundColor: kGreen),
-                        ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: kPurple))
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: kPurple,
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          Row(children: [
+                            Expanded(child: SummaryCard(
+                                label: 'ENTRADAS + SALDO ANT.', value: _income, color: kGreen)),
+                            const SizedBox(width: 8),
+                            Expanded(child: SummaryCard(
+                                label: 'SAIDAS DO MES', value: _expense, color: kRed)),
+                          ]),
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            Expanded(child: SummaryCard(
+                                label: 'SALDO', value: _saldo,
+                                color: _saldo >= 0 ? kGreen : kRed)),
+                            const SizedBox(width: 8),
+                            Expanded(child: SummaryCard(
+                                label: 'FIXOS', value: _fixed, color: kRed)),
+                            const SizedBox(width: 8),
+                            Expanded(child: SummaryCard(
+                                label: 'FALTA PAGAR', value: _pending, color: kOrange)),
+                          ]),
+                          const SizedBox(height: 16),
+                          Row(children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _openTxForm('income'),
+                                icon: const Icon(Icons.arrow_upward, size: 16),
+                                label: const Text('Entrada'),
+                                style: ElevatedButton.styleFrom(backgroundColor: kGreen),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _openTxForm('expense'),
+                                icon: const Icon(Icons.arrow_downward, size: 16),
+                                label: const Text('Despesa'),
+                                style: ElevatedButton.styleFrom(backgroundColor: kRed),
+                              ),
+                            ),
+                          ]),
+                          const SizedBox(height: 8),
+                          const SectionHeader('Lancamentos'),
+                          if (_txs.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32),
+                              child: EmptyState(
+                                icon: Icons.receipt_long_outlined,
+                                message: 'Nenhum lancamento neste mes.\nToque em Entrada ou Despesa para adicionar.',
+                              ),
+                            )
+                          else
+                            ...List.generate(_txs.length, (i) =>
+                                TxTile(tx: _txs[i], onTap: () => _onTxTap(_txs[i]))),
+                          const SizedBox(height: 32),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openTxForm('expense'),
-                          icon: const Icon(Icons.arrow_downward, size: 16),
-                          label: const Text('Despesa'),
-                          style: ElevatedButton.styleFrom(backgroundColor: kRed),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 8),
-
-                    const SectionHeader('Lancamentos'),
-
-                    if (_txs.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32),
-                        child: EmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          message: 'Nenhum lancamento neste mes.\nToque em Entrada ou Despesa para adicionar.',
-                        ),
-                      )
-                    else
-                      ...List.generate(_txs.length, (i) =>
-                          TxTile(tx: _txs[i], onTap: () => _onTxTap(_txs[i]))),
-
-                    const SizedBox(height: 80),
-                  ]),
-                ),
-              ),
+                    ),
+            ),
           ],
         ),
       ),

@@ -121,8 +121,8 @@ class _MainShellState extends State<_MainShell> {
         destinations: _destinations,
         backgroundColor: kSurface,
         indicatorColor: kPurple.withOpacity(0.2),
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        height: 68,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 72,
       ),
     );
   }
