@@ -375,12 +375,12 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                             )),
                             const SizedBox(width: 8),
                             Expanded(child: OutlinedButton(
-                            const SizedBox(width: 8),
-                            Expanded(child: OutlinedButton(
                               onPressed: () => _editInstallment(inst),
                               style: OutlinedButton.styleFrom(side: const BorderSide(color: kPurple), foregroundColor: kPurple),
                               child: const Text('Editar'),
                             )),
+                            const SizedBox(width: 8),
+                            Expanded(child: OutlinedButton(
                               onPressed: () async {
                                 final ok = await confirmSheet(context,
                                     title: 'Cancelar "${inst.description}"',
