@@ -35,6 +35,18 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
+      - name: Adicionar permissao de internet ao AndroidManifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          # Adicionar permissao de internet se nao existir
+          if ! grep -q "INTERNET" "$MANIFEST"; then
+            sed -i 's/<manifest xmlns:android/\n    <uses-permission android:name="android.permission.INTERNET"\/>\n\n<manifest xmlns:android/' "$MANIFEST"
+            echo "Permissao INTERNET adicionada"
+          else
+            echo "Permissao INTERNET ja existe"
+          fi
+          cat "$MANIFEST"
+
       - name: Build APK release
         run: flutter build apk --release --split-per-abi
 
