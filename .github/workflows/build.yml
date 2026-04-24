@@ -29,13 +29,18 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Criar estrutura Android nativa
+        run: |
+          flutter create --platforms android --project-name financaspessoais .
+          flutter pub get
+
       - name: Verificar codigo
         run: flutter analyze --no-fatal-infos
 
       - name: Build APK release
         run: flutter build apk --release --split-per-abi
 
-      - name: Build APK universal (para instalar direto)
+      - name: Build APK universal
         run: flutter build apk --release
 
       - name: Upload APKs
