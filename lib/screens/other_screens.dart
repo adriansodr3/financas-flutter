@@ -190,48 +190,6 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
     );
   }
 
-  Future<void> _editInstallment(Installment inst) async {
-    final descCtrl = TextEditingController(text: inst.description);
-    Category? selCat;
-
-    await showModalBottomSheet(
-      context: context, isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24,20,24,40),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Editar Parcelamento',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
-            const SizedBox(height: 4),
-            const Text('Altera descricao e categoria. Os valores das parcelas nao mudam.',
-                style: TextStyle(fontSize: 12, color: kMuted)),
-            const SizedBox(height: 16),
-            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao')),
-            const SizedBox(height: 16),
-            CategorySelector(
-              type: 'expense',
-              onChanged: (c) => selCat = c,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton(
-              onPressed: () async {
-                if (descCtrl.text.trim().isEmpty) return;
-                await DB.updateInstallment(
-                  id: inst.id,
-                  description: descCtrl.text.trim(),
-                  categoryId: selCat?.id ?? inst.categoryId,
-                );
-                Navigator.pop(ctx);
-                _load();
-              },
-              child: const Text('Salvar'),
-            )),
-          ]),
-        ),
-      )),
-    );
-  }
 
   Future<void> _addInstallment() async {
     List<Category> cats = await DB.getCategories(type: 'expense');
