@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../services/db.dart';
 import '../theme.dart';
 import '../widgets/widgets.dart';
+import '../models/models.dart';
 
 const kInvestColor = Color(0xFF0EA5E9);
 
