@@ -20,7 +20,6 @@ ThemeData appTheme() {
       primary: kPurple,
       secondary: kGreen,
       surface: kSurface,
-      surface: kBg,
       error: kRed,
       onPrimary: Colors.white,
       onSurface: kText,
