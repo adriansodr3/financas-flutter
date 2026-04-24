@@ -50,8 +50,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    body: Column(children: [
+        body: Column(children: [
       MonthNav(year: _year, month: _month, onPrev: _prev, onNext: _next, onToday: _today),
       Expanded(
         child: _loading
@@ -275,8 +274,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(backgroundColor: kSurface, title: const Text('Parcelamentos', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Parcelamentos', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: _loading
       ? const Center(child: CircularProgressIndicator(color: kPurple))

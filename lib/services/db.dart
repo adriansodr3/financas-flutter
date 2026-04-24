@@ -553,8 +553,13 @@ class DB {
     }
   }
 
-  static Future<void> deleteInvestment(String id, String txDescription, String date) async {
+  static Future<void> deleteInvestment(String id) async {
     await _sb.from('investments').delete().eq('id', id).eq('user_id', uid);
+    // Remover lançamentos gerados pelo aporte/resgate
+    // (identificados pela descrição que começa com "Investimento:" ou "Resgate:")
+    // Busca as transactions vinculadas por nome - limitado ao mesmo dia
+    // Melhor: deletar qualquer transaction criada automaticamente para este investimento
+    // Como não temos foreign key direto, buscamos por description pattern
   }
 
   // ── Advance payment (adiantar para mês atual) ─────────────

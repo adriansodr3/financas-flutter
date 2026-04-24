@@ -156,8 +156,7 @@ class FixedScreenState extends State<FixedScreen> {
   Widget build(BuildContext context) {
     final cats = _catOptions;
     return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(backgroundColor: kSurface, elevation: 0,
+            appBar: AppBar(elevation: 0,
         title: const Text('Gastos e Receitas Fixos', style: TextStyle(color: kText, fontSize: 16)),
         actions: [
           // Filtro por categoria

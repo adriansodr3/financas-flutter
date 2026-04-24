@@ -46,8 +46,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: kBg,
-      body: Column(children: [
+            body: Column(children: [
         MonthNav(year: _year, month: _month, onPrev: _prev, onNext: _next),
         // Toggle
         Padding(
@@ -291,8 +290,7 @@ class CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(backgroundColor: kSurface, title: const Text('Categorias', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Categorias', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: _loading
       ? const Center(child: CircularProgressIndicator(color: kPurple))
@@ -390,8 +388,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(backgroundColor: kSurface, title: const Text('Perfil', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
+        appBar: AppBar(title: const Text('Perfil', style: TextStyle(color: kText, fontSize: 16)), elevation: 0,
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: ListView(padding: const EdgeInsets.all(20), children: [
       // Avatar

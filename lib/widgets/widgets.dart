@@ -130,7 +130,6 @@ class MonthNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: kSurface,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: [
