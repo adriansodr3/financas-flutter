@@ -128,3 +128,31 @@ Color hexColor(String hex) {
     return kPurple;
   }
 }
+
+
+ThemeData appThemeLight() {
+  final base = ThemeData.light(useMaterial3: true);
+  return base.copyWith(
+    colorScheme: ColorScheme.light(
+      primary: kPurple,
+      secondary: kGreen,
+      surface: Colors.white,
+      background: const Color(0xFFF8FAFC),
+      error: kRed,
+    ),
+    scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+    textTheme: GoogleFonts.interTextTheme(base.textTheme),
+    cardTheme: CardTheme(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.white,
+      indicatorColor: kPurple.withOpacity(0.15),
+    ),
+  );
+}

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
-import 'category_inline.dart';
 import '../widgets/widgets.dart';
 import '../widgets/category_picker.dart';
 import 'tx_form_sheet.dart';
@@ -73,17 +72,17 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         FloatingActionButton(
-          heroTag: 'fab_inc', mini: true,
+          heroTag: 'fab_inc',
           backgroundColor: kGreen,
           onPressed: () => _openForm('income'),
-          child: const Icon(Icons.add, color: Colors.white),
+          child: const Icon(Icons.arrow_upward, color: Colors.white),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         FloatingActionButton(
           heroTag: 'fab_exp',
           backgroundColor: kRed,
           onPressed: () => _openForm('expense'),
-          child: const Icon(Icons.remove, color: Colors.white),
+          child: const Icon(Icons.arrow_downward, color: Colors.white),
         ),
       ],
     ),
@@ -91,190 +90,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 }
 
 
-// ── fixed_screen.dart ─────────────────────────────────────
-
-class FixedScreen extends StatefulWidget {
-  const FixedScreen({super.key});
-  @override
-  State<FixedScreen> createState() => FixedScreenState();
-}
-
-class FixedScreenState extends State<FixedScreen> {
-  void load() { _load(); }
-  List<FixedExpense> _items = [];
-  bool _loading = true;
-
-  @override
-  void initState() { super.initState(); _load(); }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    final items = await DB.getActiveFixed();
-    if (mounted) setState(() { _items = items; _loading = false; });
-  }
-
-  Future<void> _addFixed() async {
-    List<Category> cats = await DB.getCategories(type: 'expense');
-    String selType = 'expense';
-    Category? selCat = cats.isNotEmpty ? cats.first : null;
-    final descCtrl = TextEditingController();
-    final amtCtrl  = TextEditingController();
-
-    final ok = await showModalBottomSheet<bool>(
-      context: context, isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24,20,24,40),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Novo Fixo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
-              const SizedBox(height: 16),
-              // Tipo
-              Row(children: [
-                Expanded(child: GestureDetector(
-                  onTap: () async {
-                    cats = await DB.getCategories(type: 'expense');
-                    setSt((){selType='expense'; selCat=cats.isNotEmpty?cats.first:null;});
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selType=='expense' ? kRed.withOpacity(0.15) : kCard,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: selType=='expense' ? kRed : kBorder),
-                    ),
-                    child: Text('Despesa', textAlign: TextAlign.center,
-                        style: TextStyle(color: selType=='expense'?kRed:kMuted, fontWeight: FontWeight.w600)),
-                  ),
-                )),
-                const SizedBox(width: 8),
-                Expanded(child: GestureDetector(
-                  onTap: () async {
-                    cats = await DB.getCategories(type: 'income');
-                    setSt((){selType='income'; selCat=cats.isNotEmpty?cats.first:null;});
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selType=='income' ? kGreen.withOpacity(0.15) : kCard,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: selType=='income' ? kGreen : kBorder),
-                    ),
-                    child: Text('Entrada', textAlign: TextAlign.center,
-                        style: TextStyle(color: selType=='income'?kGreen:kMuted, fontWeight: FontWeight.w600)),
-                  ),
-                )),
-              ]),
-              const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao (ex: Aluguel)')),
-              const SizedBox(height: 12),
-              TextField(controller: amtCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Valor mensal', prefixText: 'R\$ ')),
-              const SizedBox(height: 12),
-              if (cats.isNotEmpty) ...[
-                const Text('Categoria', style: TextStyle(fontSize: 12, color: kMuted)),
-                const SizedBox(height: 6),
-                SizedBox(height: 40, child: ListView.separated(
-                  scrollDirection: Axis.horizontal, itemCount: cats.length,
-                  separatorBuilder: (_,__)=>const SizedBox(width: 8),
-                  itemBuilder: (_,i) {
-                    final c = cats[i]; final sel = selCat?.id==c.id;
-                    final col = selType=='income' ? kGreen : kRed;
-                    return GestureDetector(
-                      onTap: () => setSt(()=>selCat=c),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: sel ? col.withOpacity(0.15) : kCard,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: sel ? col : kBorder),
-                        ),
-                        child: Text(c.name, style: TextStyle(fontSize: 12, color: sel?col:kMuted)),
-                      ),
-                    );
-                  },
-                )),
-                const SizedBox(height: 16),
-              ],
-              SizedBox(width: double.infinity, child: ElevatedButton(
-                onPressed: () async {
-                  final amt = double.tryParse(amtCtrl.text.replaceAll(',','.'));
-                  if (amt == null || descCtrl.text.trim().isEmpty) return;
-                  await DB.createFixed(type: selType, amount: amt, description: descCtrl.text.trim(), categoryId: selCat?.id);
-                  Navigator.pop(ctx, true);
-                },
-                child: const Text('Salvar'),
-              )),
-            ]),
-          ),
-        ),
-      ),
-    );
-    if (ok == true) _load();
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: kSurface,
-      title: const Text('Gastos e Receitas Fixos', style: TextStyle(color: kText, fontSize: 16)),
-      elevation: 0,
-      bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder)),
-    ),
-    body: _loading
-      ? const Center(child: CircularProgressIndicator(color: kPurple))
-      : _items.isEmpty
-        ? const EmptyState(icon: Icons.pin_outlined, message: 'Nenhum fixo cadastrado')
-        : RefreshIndicator(
-            onRefresh: _load, color: kPurple,
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(12,8,12,80),
-              itemCount: _items.length,
-              itemBuilder: (_, i) {
-                final f = _items[i];
-                final isInc = f.type=='income';
-                final color = isInc ? kGreen : kRed;
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  child: ListTile(
-                    leading: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
-                      child: Icon(isInc ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 18),
-                    ),
-                    title: Text(f.description, style: const TextStyle(fontSize: 14, color: kText)),
-                    subtitle: Text('${f.categoryName ?? "—"}  •  ${fmtCurrency(f.amount)}/mes',
-                        style: const TextStyle(fontSize: 12, color: kMuted)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: kMuted),
-                      onPressed: () async {
-                        final ok = await confirmSheet(context,
-                            title: 'Desativar fixo',
-                            body: '"${f.description}"\n\nDesativar este lancamento fixo?',
-                            confirmLabel: 'Desativar');
-                        if (ok == true) { await DB.deactivateFixed(f.id); _load(); }
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-    floatingActionButton: FloatingActionButton(
-      backgroundColor: kPurple,
-      onPressed: _addFixed,
-      child: const Icon(Icons.add),
-    ),
-  );
-}
-
-
-// ── installments_screen.dart ──────────────────────────────
 
 class InstallmentsScreen extends StatefulWidget {
   const InstallmentsScreen({super.key});

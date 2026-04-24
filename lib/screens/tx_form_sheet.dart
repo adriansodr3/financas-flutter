@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
-import 'category_inline.dart';
+import '../widgets/category_picker.dart';
 
 class TxFormSheet extends StatefulWidget {
   final String type;

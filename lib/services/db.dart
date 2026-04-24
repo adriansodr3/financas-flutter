@@ -249,16 +249,17 @@ class DB {
     required double amount,
     required String description,
     String? categoryId,
+    String? validFrom,
   }) async {
     final now = DateTime.now();
-    final validFrom = '${now.year}-${now.month.toString().padLeft(2,'0')}-01';
+    final vf = validFrom ?? '${now.year}-${now.month.toString().padLeft(2, "0")}-01';
     await _sb.from('fixed_expenses').insert({
       'user_id': uid,
       'category_id': categoryId,
       'type': type,
       'amount': amount,
       'description': description,
-      'valid_from': validFrom,
+      'valid_from': vf,
     });
   }
 
@@ -497,3 +498,157 @@ class DB {
         .eq('user_id', uid);
   }
 }
+
+  // ── Investments ──────────────────────────────────────────
+
+  static Future<void> createInvestmentsTableIfNeeded() async {
+    // Tabela criada via SQL no Supabase — verificar existência tentando query
+    try {
+      await _sb.from('investments').select('id').limit(1);
+    } catch (_) {}
+  }
+
+  static Future<List<Map<String, dynamic>>> getInvestments() async {
+    try {
+      final data = await _sb
+          .from('investments')
+          .select()
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(data as List);
+    } catch (_) { return []; }
+  }
+
+  static Future<void> createInvestment({
+    required String name,
+    required double amount,
+    required String type, // 'aporte' | 'resgate' | 'rendimento'
+    required String date,
+    String? notes,
+  }) async {
+    await _sb.from('investments').insert({
+      'user_id': uid,
+      'name': name,
+      'amount': amount,
+      'type': type,
+      'date': date,
+      'notes': notes,
+    });
+    // Debitar do saldo como despesa
+    if (type == 'aporte') {
+      await createTransaction(
+        type: 'expense',
+        amount: amount,
+        description: 'Investimento: $name',
+        date: date,
+        categoryId: null,
+      );
+    } else if (type == 'resgate') {
+      await createTransaction(
+        type: 'income',
+        amount: amount,
+        description: 'Resgate: $name',
+        date: date,
+        categoryId: null,
+      );
+    }
+  }
+
+  static Future<void> deleteInvestment(String id, String txDescription, String date) async {
+    await _sb.from('investments').delete().eq('id', id).eq('user_id', uid);
+  }
+
+  // ── Advance payment (adiantar para mês atual) ─────────────
+
+  static Future<void> advanceTransaction({
+    required String txId,
+    required String newDate,
+  }) async {
+    await _sb.from('transactions')
+        .update({'date': newDate})
+        .eq('id', txId)
+        .eq('user_id', uid);
+  }
+
+  // ── Edit fixed forward (mês atual em diante) ─────────────
+
+  static Future<void> editFixedForward({
+    required String fixedId,
+    required double amount,
+    required String description,
+    String? categoryId,
+    required int fromYear,
+    required int fromMonth,
+  }) async {
+    // Desativar o fixo atual
+    await _sb.from('fixed_expenses')
+        .update({'active': false})
+        .eq('id', fixedId).eq('user_id', uid);
+    // Criar novo fixo com valid_from = mês atual
+    final validFrom = '${fromYear.toString().padLeft(4,'0')}-${fromMonth.toString().padLeft(2,'0')}-01';
+    await _sb.from('fixed_expenses').insert({
+      'user_id': uid,
+      'category_id': categoryId,
+      'type': 'expense',
+      'amount': amount,
+      'description': description,
+      'valid_from': validFrom,
+    });
+    // Deletar instâncias futuras do fixo antigo (mês atual em diante)
+    await _sb.from('transactions').delete()
+        .eq('fixed_expense_id', fixedId)
+        .eq('user_id', uid)
+        .gte('date', validFrom);
+  }
+
+  // ── Deactivate fixed forward (mantém meses passados) ─────
+
+  static Future<void> deactivateFixedForward({
+    required String fixedId,
+    required int fromYear,
+    required int fromMonth,
+  }) async {
+    final validFrom = '${fromYear.toString().padLeft(4,'0')}-${fromMonth.toString().padLeft(2,'0')}-01';
+    // Desativar o fixo
+    await _sb.from('fixed_expenses')
+        .update({'active': false})
+        .eq('id', fixedId).eq('user_id', uid);
+    // Deletar instâncias a partir do mês atual
+    await _sb.from('transactions').delete()
+        .eq('fixed_expense_id', fixedId)
+        .eq('user_id', uid)
+        .gte('date', validFrom);
+  }
+
+  // ── Update installment all months ────────────────────────
+
+  static Future<void> updateInstallmentFull({
+    required String instId,
+    required String description,
+    required double newAmount,
+    String? categoryId,
+  }) async {
+    // Atualizar registro principal
+    await _sb.from('installments').update({
+      'description': description,
+      'installment_amount': newAmount,
+      'category_id': categoryId,
+    }).eq('id', instId).eq('user_id', uid);
+    // Buscar total de parcelas
+    final inst = await _sb.from('installments')
+        .select('total_parcelas').eq('id', instId).single();
+    final total = inst['total_parcelas'] as int;
+    // Atualizar todas as parcelas
+    final parcelas = await _sb.from('transactions')
+        .select('id, installment_number')
+        .eq('installment_id', instId)
+        .eq('user_id', uid);
+    for (final p in parcelas as List) {
+      final n = p['installment_number'] as int;
+      await _sb.from('transactions').update({
+        'description': '$description ($n/$total)',
+        'amount': newAmount,
+        'category_id': categoryId,
+      }).eq('id', p['id']).eq('user_id', uid);
+    }
+  }

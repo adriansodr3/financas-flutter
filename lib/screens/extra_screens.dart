@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../main.dart' show themeNotifier;
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
@@ -413,6 +414,19 @@ class ProfileScreenState extends State<ProfileScreen> {
           title: const Text('Alterar Senha', style: TextStyle(color: kText)),
           trailing: const Icon(Icons.chevron_right, color: kMuted),
           onTap: _changePassword,
+        ),
+        const Divider(height: 1, color: kBorder),
+        ValueListenableBuilder(
+          valueListenable: themeNotifier,
+          builder: (_, mode, __) => ListTile(
+            leading: Icon(mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: kMuted),
+            title: Text(mode == ThemeMode.dark ? 'Tema: Escuro' : 'Tema: Claro', style: const TextStyle(color: kText)),
+            trailing: Switch(
+              value: mode == ThemeMode.dark,
+              onChanged: (v) => themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light,
+              activeColor: kPurple,
+            ),
+          ),
         ),
         const Divider(height: 1, color: kBorder),
         ListTile(

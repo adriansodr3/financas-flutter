@@ -5,12 +5,12 @@ import '../theme.dart';
 
 /// Widget de seleção de categoria com botão inline para criar nova.
 /// Retorna a categoria selecionada via [onChanged].
-class CategoryPicker extends StatefulWidget {
+class CategorySelector extends StatefulWidget {
   final String type; // 'income' | 'expense'
   final Category? initial;
   final ValueChanged<Category?> onChanged;
 
-  const CategoryPicker({
+  const CategorySelector({
     super.key,
     required this.type,
     required this.onChanged,
@@ -18,10 +18,10 @@ class CategoryPicker extends StatefulWidget {
   });
 
   @override
-  State<CategoryPicker> createState() => _CategoryPickerState();
+  State<CategorySelector> createState() => _CategoryPickerState();
 }
 
-class _CategoryPickerState extends State<CategoryPicker> {
+class _CategoryPickerState extends State<CategorySelector> {
   List<Category> _cats = [];
   Category? _sel;
 
