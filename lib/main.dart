@@ -8,8 +8,8 @@ import 'screens/extra_screens.dart';
 import 'screens/fixed_screen.dart';
 import 'screens/investments_screen.dart';
 
-const _supabaseUrl = 'https://cogmxnspkpqycygqlvwu.supabase.co';
-const _supabaseKey = 'sb_publishable_mkGB3rnT5Lgrj8i5FEkhYQ_vRTV4r8u';
+const _supabaseUrl = 'https://gattydrrhmhuqysbsjol.supabase.co';
+const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdHR5ZHJyaG1odXF5c2Jzam9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTE0NDksImV4cCI6MjA5NzkyNzQ0OX0.dUhFtUY_SzL1A32LxZgVYpTSAzQ0s1xB8V6vgc9yxEo';
 
 // Notifier global para tema
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
