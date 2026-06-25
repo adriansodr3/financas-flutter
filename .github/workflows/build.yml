@@ -22,7 +22,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.0"
+          flutter-version: "3.29.3"
           channel: stable
           cache: true
 
@@ -31,10 +31,8 @@ jobs:
 
       - name: Criar estrutura Android nativa
         run: |
-          # Salvar nosso AndroidManifest antes do flutter create sobrescrever
           cp android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
           flutter create --platforms android --project-name financaspessoais .
-          # Restaurar nosso manifest com permissao de internet
           cp /tmp/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           rm -f test/widget_test.dart
           flutter pub get
