@@ -37,4 +37,7 @@ flutter:
   uses-material-design: true
 
 dependency_overrides:
-  package_info_plus: ^8.0.0
+  # Fixar versões compatíveis com Kotlin 1.8 / Flutter 3.22
+  device_info_plus: "10.1.2"
+  package_info_plus: "8.1.2"
+  shared_preferences_android: "2.4.7"

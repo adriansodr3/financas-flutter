@@ -22,7 +22,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.29.3"
+          flutter-version: "3.22.0"
           channel: stable
           cache: true
 
@@ -35,42 +35,31 @@ jobs:
           flutter create --platforms android --project-name financaspessoais .
           cp /tmp/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           rm -f test/widget_test.dart
+          flutter pub get
 
-      - name: Fixar minSdk e ndkVersion no local.properties
+      - name: Corrigir minSdk via Python
         run: |
-          # Método mais confiável: setar no local.properties que o Flutter lê
-          echo "flutter.minSdkVersion=23" >> android/local.properties
-          echo "flutter.ndkVersion=27.0.12077973" >> android/local.properties
-          cat android/local.properties
-          
-          # Também tentar no build.gradle.kts via python
           python3 << 'PYEOF'
           import os, re
 
           for path in ["android/app/build.gradle.kts", "android/app/build.gradle"]:
-              if not os.path.exists(path): continue
+              if not os.path.exists(path):
+                  continue
               content = open(path).read()
-              print(f"=== {path} ===")
-              print(content[:600])
-              
-              # Substituir qualquer forma de minSdk
+              print(f"=== {path} (original) ===")
+              print(content)
+              # Substituir qualquer variante de minSdk
               content = re.sub(r'flutter\.minSdkVersion', '23', content)
+              content = re.sub(r'minSdk\s*=\s*flutter\.\S+', 'minSdk = 23', content)
               content = re.sub(r'minSdk\s*=\s*\d+', 'minSdk = 23', content)
-              content = re.sub(r'minSdkVersion\s*=\s*\d+', 'minSdkVersion = 23', content)
-              content = re.sub(r'minSdkVersion\(\d+\)', 'minSdkVersion(23)', content)
-              content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', content)
-              
+              content = re.sub(r'minSdkVersion\s*\(?\s*\d+\s*\)?', 'minSdkVersion 23', content)
               # ndkVersion
               if 'ndkVersion' not in content:
                   content = re.sub(r'(android\s*\{)', r'\1\n    ndkVersion = "27.0.12077973"', content, count=1)
-              
+              print(f"=== {path} (corrigido) ===")
+              print(content)
               open(path, "w").write(content)
-              print("=== DEPOIS ===")
-              print(content[:600])
           PYEOF
-
-      - name: Get dependencies pos-create
-        run: flutter pub get
 
       - name: Build APK release
         run: flutter build apk --release --split-per-abi
