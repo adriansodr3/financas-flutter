@@ -37,40 +37,37 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
-      - name: Corrigir minSdk e ndkVersion via Python
+      - name: Inspecionar e corrigir build.gradle.kts
         run: |
+          echo "=== Arquivos gradle ===" 
+          ls android/app/build.gradle* 2>/dev/null || echo "nenhum"
+          echo ""
+          echo "=== Conteudo build.gradle.kts ==="
+          cat android/app/build.gradle.kts 2>/dev/null || cat android/app/build.gradle 2>/dev/null
+
           python3 << 'PYEOF'
           import os, re
 
-          # Encontrar o arquivo gradle (pode ser .kts ou .gradle)
-          candidates = [
-              "android/app/build.gradle.kts",
-              "android/app/build.gradle",
-          ]
-          path = next((p for p in candidates if os.path.exists(p)), None)
-          print(f"Arquivo encontrado: {path}")
-
+          path = "android/app/build.gradle.kts" if os.path.exists("android/app/build.gradle.kts") else "android/app/build.gradle"
           content = open(path).read()
-          print("=== ANTES ===")
-          print(content[:800])
 
-          # Corrigir minSdk
-          content = content.replace("minSdk = 21", "minSdk = 22")
-          content = content.replace("minSdkVersion = 21", "minSdkVersion = 22")
-          content = content.replace("minSdkVersion(21)", "minSdkVersion(22)")
-          content = content.replace("minSdkVersion 21", "minSdkVersion 22")
+          # Substituir qualquer referência a minSdk por 22
+          content = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 22', content)
+          content = re.sub(r'minSdk\s*=\s*\d+', 'minSdk = 22', content)
+          content = re.sub(r'minSdkVersion\s*=\s*flutter\.minSdkVersion', 'minSdkVersion = 22', content)
+          content = re.sub(r'minSdkVersion\s*=\s*\d+', 'minSdkVersion = 22', content)
+          content = re.sub(r'minSdkVersion\(\d+\)', 'minSdkVersion(22)', content)
+          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 22', content)
 
-          # Adicionar ndkVersion dentro do bloco android {}
-          if "ndkVersion" not in content:
-              content = content.replace(
-                  "android {",
-                  'android {\n    ndkVersion = "27.0.12077973"',
-                  1
-              )
+          # ndkVersion
+          if 'ndkVersion' not in content:
+              content = content.replace('android {', 'android {\n    ndkVersion = "27.0.12077973"', 1)
+          else:
+              content = re.sub(r'ndkVersion\s*=\s*["\'].*?["\']', 'ndkVersion = "27.0.12077973"', content)
 
           open(path, "w").write(content)
-          print("=== DEPOIS ===")
-          print(content[:800])
+          print("=== APOS CORRECAO ===")
+          print(content)
           PYEOF
 
       - name: Build APK release
