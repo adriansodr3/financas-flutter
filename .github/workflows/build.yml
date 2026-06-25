@@ -37,27 +37,41 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
-      - name: Corrigir minSdk e ndkVersion
+      - name: Corrigir minSdk e ndkVersion via Python
         run: |
-          # Flutter 3.29 usa .kts, versoes antigas usam .gradle
-          if [ -f "android/app/build.gradle.kts" ]; then
-            GRADLE="android/app/build.gradle.kts"
-            sed -i 's/minSdk = 21/minSdk = 22/' "$GRADLE"
-            sed -i 's/minSdkVersion(21)/minSdkVersion(22)/' "$GRADLE"
-            if ! grep -q "ndkVersion" "$GRADLE"; then
-              sed -i '/android {/a\    ndkVersion = "27.0.12077973"' "$GRADLE"
-            fi
-          elif [ -f "android/app/build.gradle" ]; then
-            GRADLE="android/app/build.gradle"
-            sed -i 's/minSdkVersion 21/minSdkVersion 22/' "$GRADLE"
-            sed -i 's/minSdk = 21/minSdk = 22/' "$GRADLE"
-            if ! grep -q "ndkVersion" "$GRADLE"; then
-              sed -i '/android {/a\    ndkVersion = "27.0.12077973"' "$GRADLE"
-            fi
-          fi
-          echo "=== Arquivo Gradle ==="
-          ls android/app/build.gradle* 2>/dev/null
-          head -35 android/app/build.gradle* 2>/dev/null
+          python3 << 'PYEOF'
+          import os, re
+
+          # Encontrar o arquivo gradle (pode ser .kts ou .gradle)
+          candidates = [
+              "android/app/build.gradle.kts",
+              "android/app/build.gradle",
+          ]
+          path = next((p for p in candidates if os.path.exists(p)), None)
+          print(f"Arquivo encontrado: {path}")
+
+          content = open(path).read()
+          print("=== ANTES ===")
+          print(content[:800])
+
+          # Corrigir minSdk
+          content = content.replace("minSdk = 21", "minSdk = 22")
+          content = content.replace("minSdkVersion = 21", "minSdkVersion = 22")
+          content = content.replace("minSdkVersion(21)", "minSdkVersion(22)")
+          content = content.replace("minSdkVersion 21", "minSdkVersion 22")
+
+          # Adicionar ndkVersion dentro do bloco android {}
+          if "ndkVersion" not in content:
+              content = content.replace(
+                  "android {",
+                  'android {\n    ndkVersion = "27.0.12077973"',
+                  1
+              )
+
+          open(path, "w").write(content)
+          print("=== DEPOIS ===")
+          print(content[:800])
+          PYEOF
 
       - name: Build APK release
         run: flutter build apk --release --split-per-abi
