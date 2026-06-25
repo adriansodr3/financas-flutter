@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
 
   # Backend / Auth / Sync
-  supabase_flutter: ^2.3.4
+  supabase_flutter: ^1.10.25
 
   # Estado
   provider: ^6.1.2
@@ -35,9 +35,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-dependency_overrides:
-  # Fixar versões compatíveis com Kotlin 1.8 / Flutter 3.22
-  device_info_plus: "10.1.2"
-  package_info_plus: "8.1.2"
-  shared_preferences_android: "2.4.7"

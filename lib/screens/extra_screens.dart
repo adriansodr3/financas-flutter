@@ -373,7 +373,7 @@ class ProfileScreenState extends State<ProfileScreen> {
             SizedBox(width: double.infinity, child: ElevatedButton(
               onPressed: () async {
                 if (ctrl.text != ctrl2.text || ctrl.text.length < 6) return;
-                await _sb.auth.updateUser(UserAttributes(password: ctrl.text));
+                await _sb.auth.update(UserAttributes(password: ctrl.text));
                 Navigator.pop(ctx);
                 if (context.mounted) ScaffoldMessenger.of(context)
                     .showSnackBar(const SnackBar(content: Text('Senha alterada!')));
