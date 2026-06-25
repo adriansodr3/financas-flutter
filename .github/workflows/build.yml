@@ -29,6 +29,50 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Patch pub cache - corrigir build.gradle com flutter.minSdkVersion
+        run: |
+          python3 << 'PYEOF'
+          import os, glob, re
+
+          pub_cache = os.environ.get("PUB_CACHE", os.path.expanduser("~/.pub-cache"))
+          print(f"PUB_CACHE: {pub_cache}")
+
+          # Encontrar todos os build.gradle de pacotes problemáticos
+          patterns = [
+              f"{pub_cache}/**/passkeys_doctor*/android/build.gradle",
+              f"{pub_cache}/**/passkeys_android*/android/build.gradle",
+              f"{pub_cache}/**/ua_client_hints*/android/build.gradle",
+          ]
+
+          fixed = []
+          for pattern in patterns:
+              for path in glob.glob(pattern, recursive=True):
+                  content = open(path).read()
+                  print(f"\n=== {path} ===")
+                  print(content[:400])
+
+                  # Substituir referencias ao plugin flutter por valores fixos
+                  content = content.replace("flutter.minSdkVersion", "23")
+                  content = content.replace("flutter.compileSdkVersion", "35")
+                  content = content.replace("flutter.targetSdkVersion", "35")
+                  content = content.replace("flutter.minSdk", "23")
+                  content = content.replace("flutter.compileSdk", "35")
+                  content = content.replace("flutter.targetSdk", "35")
+
+                  open(path, "w").write(content)
+                  fixed.append(path)
+                  print(f"CORRIGIDO: {path}")
+
+          if not fixed:
+              print("Nenhum arquivo encontrado para corrigir - listando pub cache:")
+              for root, dirs, files in os.walk(pub_cache):
+                  for f in files:
+                      if f == "build.gradle" and "android" in root:
+                          full = os.path.join(root, f)
+                          if any(x in full for x in ["passkeys", "ua_client"]):
+                              print(f"  {full}")
+          PYEOF
+
       - name: Criar estrutura Android nativa
         run: |
           cp android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
@@ -37,28 +81,41 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
-      - name: Corrigir minSdk via Python
+      - name: Patch pub cache pos-create
+        run: |
+          python3 << 'PYEOF'
+          import os, glob
+
+          pub_cache = os.environ.get("PUB_CACHE", os.path.expanduser("~/.pub-cache"))
+          patterns = [
+              f"{pub_cache}/**/passkeys_doctor*/android/build.gradle",
+              f"{pub_cache}/**/passkeys_android*/android/build.gradle",
+              f"{pub_cache}/**/ua_client_hints*/android/build.gradle",
+          ]
+          for pattern in patterns:
+              for path in glob.glob(pattern, recursive=True):
+                  content = open(path).read()
+                  content = content.replace("flutter.minSdkVersion", "23")
+                  content = content.replace("flutter.compileSdkVersion", "35")
+                  content = content.replace("flutter.targetSdkVersion", "35")
+                  open(path, "w").write(content)
+                  print(f"Patched: {path}")
+          PYEOF
+
+      - name: Corrigir minSdk no projeto
         run: |
           python3 << 'PYEOF'
           import os, re
-
           for path in ["android/app/build.gradle.kts", "android/app/build.gradle"]:
-              if not os.path.exists(path):
-                  continue
+              if not os.path.exists(path): continue
               content = open(path).read()
-              print(f"=== {path} (original) ===")
-              print(content)
-              # Substituir qualquer variante de minSdk
               content = re.sub(r'flutter\.minSdkVersion', '23', content)
-              content = re.sub(r'minSdk\s*=\s*flutter\.\S+', 'minSdk = 23', content)
               content = re.sub(r'minSdk\s*=\s*\d+', 'minSdk = 23', content)
-              content = re.sub(r'minSdkVersion\s*\(?\s*\d+\s*\)?', 'minSdkVersion 23', content)
-              # ndkVersion
+              content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', content)
               if 'ndkVersion' not in content:
                   content = re.sub(r'(android\s*\{)', r'\1\n    ndkVersion = "27.0.12077973"', content, count=1)
-              print(f"=== {path} (corrigido) ===")
-              print(content)
               open(path, "w").write(content)
+              print(f"Corrigido: {path}")
           PYEOF
 
       - name: Build APK release
