@@ -13,6 +13,7 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   List<Map<String, dynamic>> _users = [];
+  Map<String, dynamic>? _dbStats;
   bool _loading = true;
   String? _error;
 
@@ -35,7 +36,12 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await _callAdmin({'action': 'list'});
+      final results = await Future.wait([
+        _callAdmin({'action': 'list'}),
+        _callAdmin({'action': 'db-stats'}),
+      ]);
+      final data = results[0];
+      final dbStats = results[1] as Map<String, dynamic>?;
       final users = (data['users'] as List? ?? [])
           .map((u) => Map<String, dynamic>.from(u as Map))
           .toList();
@@ -45,7 +51,7 @@ class _AdminScreenState extends State<AdminScreen> {
         if (b['email'] == _adminEmail) return 1;
         return (b['created_at'] as String).compareTo(a['created_at'] as String);
       });
-      if (mounted) setState(() { _users = users; _loading = false; });
+      if (mounted) setState(() { _users = users; _dbStats = dbStats; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
@@ -96,6 +102,80 @@ class _AdminScreenState extends State<AdminScreen> {
       final d = DateTime.parse(iso).toLocal();
       return '${d.day.toString().padLeft(2,'0')}/${d.month.toString().padLeft(2,'0')}/${d.year}';
     } catch (_) { return '—'; }
+  }
+
+  String _fmtBytes(num bytes) {
+    if (bytes < 1024) return '${bytes.toStringAsFixed(0)} B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  Widget _buildDbStats() {
+    final total   = (_dbStats!['total_bytes'] as num? ?? 0);
+    final limit   = (_dbStats!['limit_bytes'] as num? ?? 524288000);
+    final pct     = (total / limit * 100).clamp(0, 100);
+    final counts  = _dbStats!['counts'] as Map? ?? {};
+
+    Color barColor = kGreen;
+    if (pct > 70) barColor = kOrange;
+    if (pct > 90) barColor = kRed;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).dividerColor)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.storage_outlined, color: kPurple, size: 18),
+          const SizedBox(width: 8),
+          const Text('Banco de Dados', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          const Spacer(),
+          Text('${pct.toStringAsFixed(1)}% usado',
+              style: TextStyle(fontSize: 12, color: barColor, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: pct / 100,
+            backgroundColor: Theme.of(context).dividerColor,
+            valueColor: AlwaysStoppedAnimation(barColor),
+            minHeight: 8)),
+        const SizedBox(height: 6),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(_fmtBytes(total), style: TextStyle(fontSize: 12, color: barColor, fontWeight: FontWeight.w500)),
+          Text('/ ${_fmtBytes(limit)} (Free tier)', style: const TextStyle(fontSize: 12, color: kMuted)),
+        ]),
+        const SizedBox(height: 10),
+        const Divider(height: 1),
+        const SizedBox(height: 8),
+        Wrap(spacing: 12, runSpacing: 6, children: [
+          for (final entry in counts.entries)
+            _statChip(entry.key, entry.value as int),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _statChip(String table, int count) {
+    const icons = {
+      'transactions': Icons.receipt_long_outlined,
+      'categories': Icons.label_outline,
+      'fixed_expenses': Icons.push_pin_outlined,
+      'installments': Icons.credit_card_outlined,
+      'investments': Icons.savings_outlined,
+      'fixed_skipped': Icons.skip_next_outlined,
+    };
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icons[table] ?? Icons.table_chart_outlined, size: 13, color: kMuted),
+      const SizedBox(width: 4),
+      Text('$count', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      const SizedBox(width: 2),
+      Text(table.replaceAll('_', ' '), style: const TextStyle(fontSize: 11, color: kMuted)),
+    ]);
   }
 
   @override
