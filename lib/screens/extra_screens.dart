@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'admin_screen.dart';
 import '../main.dart' show themeNotifier;
 import '../models/models.dart';
 import '../services/db.dart';
@@ -335,6 +336,8 @@ class CategoriesScreenState extends State<CategoriesScreen> {
 
 // ── profile_screen.dart ───────────────────────────────────
 
+const _adminEmail = 'adriansodre1@gmail.com';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
   @override
@@ -434,6 +437,18 @@ class ProfileScreenState extends State<ProfileScreen> {
       ])),
       const SizedBox(height: 16),
 
+      // Painel Admin (só aparece para o email administrador)
+      if (_email == _adminEmail) ...[
+        const SizedBox(height: 8),
+        SizedBox(width: double.infinity, child: ElevatedButton.icon(
+          onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AdminScreen())),
+          icon: const Icon(Icons.admin_panel_settings),
+          label: const Text('Painel Administrador'),
+          style: ElevatedButton.styleFrom(backgroundColor: kPurple),
+        )),
+        const SizedBox(height: 8),
+      ],
       SizedBox(width: double.infinity, child: ElevatedButton.icon(
         onPressed: _logout,
         icon: const Icon(Icons.logout),
