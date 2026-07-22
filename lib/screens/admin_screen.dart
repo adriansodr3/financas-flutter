@@ -642,8 +642,7 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
     final email = u['email'] as String? ?? '';
     final ok = await confirmSheet(context,
       title: 'Rejeitar cadastro',
-      body: 'Rejeitar e remover o usuário "$email"?
-Ele não poderá mais acessar o sistema.',
+      body: "Rejeitar e remover o usuario \"$email\"?\nEle nao podera mais acessar o sistema.",
       confirmLabel: 'Rejeitar');
     if (ok != true) return;
     try {
