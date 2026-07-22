@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'admin_screen.dart';
 import '../main.dart' show themeNotifier;
 import '../models/models.dart';
@@ -395,11 +396,28 @@ class ProfileScreenState extends State<ProfileScreen> {
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: ListView(padding: const EdgeInsets.all(20), children: [
       // Avatar
-      Center(child: Container(
-        width: 80, height: 80,
-        decoration: BoxDecoration(color: kPurple.withOpacity(0.15), shape: BoxShape.circle,
-          border: Border.all(color: kPurple.withOpacity(0.4), width: 2)),
-        child: const Icon(Icons.person_outline, color: kPurple, size: 40),
+      Center(child: GestureDetector(
+        onTap: _changeAvatar,
+        child: Stack(alignment: Alignment.bottomRight, children: [
+          Container(
+            width: 88, height: 88,
+            decoration: BoxDecoration(
+              color: kPurple.withOpacity(0.15), shape: BoxShape.circle,
+              border: Border.all(color: kPurple.withOpacity(0.4), width: 2)),
+            child: _uploadingAvatar
+              ? const CircularProgressIndicator(color: kPurple, strokeWidth: 2)
+              : ClipOval(child: _avatarUrl != null
+                  ? Image.network(_avatarUrl!, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.person_outline, color: kPurple, size: 44))
+                  : const Icon(Icons.person_outline, color: kPurple, size: 44)),
+          ),
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              color: kPurple, shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2)),
+            child: const Icon(Icons.camera_alt, color: Colors.white, size: 14)),
+        ]),
       )),
       const SizedBox(height: 12),
       Center(child: Text(_email, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 
@@ -686,4 +687,28 @@ class DB {
       dt = DateTime(dt.year, dt.month + 1, 1);
     }
   }
+
+  // ── Avatar ───────────────────────────────────────────────
+
+  static Future<String?> getAvatarUrl() async {
+    try {
+      final path = '${uid}/avatar.jpg';
+      final url = _sb.storage.from('avatars').getPublicUrl(path);
+      // Adicionar cache buster para forçar reload
+      return '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+    } catch (_) { return null; }
+  }
+
+  static Future<String?> uploadAvatar(List<int> bytes, String mimeType) async {
+    try {
+      final path = '${uid}/avatar.jpg';
+      await _sb.storage.from('avatars').uploadBinary(
+        path, Uint8List.fromList(bytes),
+        fileOptions: FileOptions(contentType: mimeType, upsert: true));
+      return _sb.storage.from('avatars').getPublicUrl(path);
+    } catch (e) {
+      throw Exception('Erro ao enviar foto: $e');
+    }
+  }
+
 }
