@@ -17,24 +17,29 @@ class SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 10, color: kMuted, letterSpacing: 0.8)),
-            const SizedBox(height: 4),
-            Text(
-              fmtCurrency(value),
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: color),
-            ),
-          ],
+    return SizedBox(
+      height: 80,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(label,
+                  style: const TextStyle(fontSize: 9, color: kMuted, letterSpacing: 0.6),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  fmtCurrency(value),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
