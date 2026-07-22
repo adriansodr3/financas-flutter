@@ -92,6 +92,9 @@ serve(async (req) => {
 
     // ── DELETE USER ─────────────────────────────────────────
     if (action === "delete") {
+      // 1. Revogar TODAS as sessões ativas do usuário em todos os dispositivos
+      await adminClient.auth.admin.signOut(userId, 'global')
+      // 2. Deletar o usuário (invalida permanentemente todos os tokens)
       const { error } = await adminClient.auth.admin.deleteUser(userId)
       if (error) throw error
       return new Response(JSON.stringify({ success: true }), {

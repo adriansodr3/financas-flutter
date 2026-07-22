@@ -711,4 +711,17 @@ class DB {
     }
   }
 
+  // ── Session validation ────────────────────────────────────
+
+  static Future<bool> isSessionValid() async {
+    try {
+      final session = _sb.auth.currentSession;
+      if (session == null) return false;
+      await _sb.auth.refreshSession();
+      return true;
+    } catch (_) {
+      await _sb.auth.signOut();
+      return false;
+    }
+  }
 }
