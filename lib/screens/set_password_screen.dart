@@ -43,9 +43,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       // Criar categorias padrão para o novo usuário
       await DB.seedDefaultCategories();
       // Limpar a flag de convite
-      needsPasswordSetup = false;
-      // O AuthGate vai detectar a mudança e navegar para o app
-      if (mounted) setState(() {});
+      needsPasswordSetup.value = false;
+      // ValueNotifier notifica o AuthGate automaticamente
     } on AuthException catch (e) {
       if (mounted) setState(() { _error = e.message; _loading = false; });
     } catch (e) {

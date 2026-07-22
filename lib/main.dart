@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/set_password_screen.dart';
+import 'screens/pending_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/other_screens.dart';
 import 'screens/extra_screens.dart';
@@ -15,7 +16,7 @@ const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
 
 // Flag global: usuário veio de link de convite e precisa definir senha
-bool needsPasswordSetup = false;
+final needsPasswordSetup = ValueNotifier<bool>(false);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,7 @@ Future<void> main() async {
     final fragment = uri.fragment;
     final params = Uri.splitQueryString(fragment);
     if (params['type'] == 'invite') {
-      needsPasswordSetup = true;
+      needsPasswordSetup.value = true;
     }
   } catch (_) {}
 
@@ -59,6 +60,7 @@ class _AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
+  bool? _isApproved; // null = carregando, true = aprovado, false = pendente
   @override
   void initState() {
     super.initState();
@@ -82,28 +84,58 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
     try {
       if (Supabase.instance.client.auth.currentSession == null) return;
       await Supabase.instance.client.auth.refreshSession();
+      await _checkApproval();
     } catch (_) {
       await Supabase.instance.client.auth.signOut();
     }
   }
 
+  Future<void> _checkApproval() async {
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return;
+      final data = await Supabase.instance.client
+          .from('user_profiles')
+          .select('status')
+          .eq('id', uid)
+          .single();
+      final approved = data['status'] == 'approved';
+      if (mounted) setState(() => _isApproved = approved);
+    } catch (_) {
+      // Tabela pode não existir ainda — considerar aprovado
+      if (mounted) setState(() => _isApproved = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        final event   = snapshot.data?.event;
-        final session = snapshot.data?.session
-            ?? Supabase.instance.client.auth.currentSession;
+    return ValueListenableBuilder<bool>(
+      valueListenable: needsPasswordSetup,
+      builder: (context, needsSetup, _) {
+        return StreamBuilder<AuthState>(
+          stream: Supabase.instance.client.auth.onAuthStateChange,
+          builder: (context, snapshot) {
+            final session = snapshot.data?.session
+                ?? Supabase.instance.client.auth.currentSession;
 
-        if (session != null) {
-          // Usuário logado via link de convite → pedir senha
-          if (needsPasswordSetup) {
-            return const SetPasswordScreen();
-          }
-          return const _MainShell();
-        }
-        return const LoginScreen();
+            if (session != null) {
+              if (needsSetup) return const SetPasswordScreen();
+              // Verificar aprovação ao logar
+              if (_isApproved == null) {
+                _checkApproval();
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator(color: kPurple)));
+              }
+              if (_isApproved == false) return const PendingApprovalScreen();
+              return const _MainShell();
+            }
+            // Reset ao deslogar
+            if (_isApproved != null) {
+              Future.microtask(() { if (mounted) setState(() => _isApproved = null); });
+            }
+            return const LoginScreen();
+          },
+        );
       },
     );
   }

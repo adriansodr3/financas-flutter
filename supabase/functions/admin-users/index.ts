@@ -111,6 +111,42 @@ serve(async (req) => {
       })
     }
 
+    // ── PENDING USERS ────────────────────────────────────────
+    if (action === "pending-users") {
+      const { data, error } = await adminClient
+        .from('user_profiles')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return new Response(JSON.stringify({ users: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+
+    // ── APPROVE USER ─────────────────────────────────────────
+    if (action === "approve") {
+      const { error } = await adminClient
+        .from('user_profiles')
+        .update({ status: 'approved', approved_at: new Date().toISOString() })
+        .eq('id', userId)
+      if (error) throw error
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+
+    // ── REJECT USER ──────────────────────────────────────────
+    if (action === "reject") {
+      // Rejeitar: deletar o usuário completamente
+      await adminClient.auth.admin.signOut(userId, 'global')
+      const { error } = await adminClient.auth.admin.deleteUser(userId)
+      if (error) throw error
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+
     return new Response(JSON.stringify({ error: "Ação inválida" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
     })

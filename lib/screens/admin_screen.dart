@@ -44,6 +44,15 @@ class AdminScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _MenuCard(
+            icon: Icons.pending_actions_outlined,
+            color: kRed,
+            title: 'Aprovações Pendentes',
+            subtitle: 'Usuários aguardando liberação de acesso ao sistema',
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AdminPendingScreen())),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
             icon: Icons.bar_chart_outlined,
             color: kOrange,
             title: 'Estatísticas Gerais',
@@ -572,5 +581,156 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
         Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: color)),
       ]),
     ));
+  }
+}
+
+// ── Tela de Aprovações Pendentes ──────────────────────────
+
+class AdminPendingScreen extends StatefulWidget {
+  const AdminPendingScreen({super.key});
+  @override
+  State<AdminPendingScreen> createState() => _AdminPendingScreenState();
+}
+
+class _AdminPendingScreenState extends State<AdminPendingScreen> {
+  List<Map<String, dynamic>> _pending = [];
+  bool _loading = true;
+  final _sb = Supabase.instance.client;
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  Future<dynamic> _call(Map<String, dynamic> body) async {
+    final res = await _sb.functions.invoke('admin-users', body: body);
+    if (res.status != 200) throw Exception(res.data?['error'] ?? 'Erro');
+    return res.data;
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final data = await _call({'action': 'pending-users'});
+      if (mounted) setState(() {
+        _pending = List<Map<String, dynamic>>.from(data['users'] as List? ?? []);
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _approve(Map<String, dynamic> u) async {
+    final email = u['email'] as String? ?? '';
+    final ok = await confirmSheet(context,
+      title: 'Aprovar acesso',
+      body: 'Liberar acesso de "$email"?',
+      confirmLabel: 'Aprovar',
+      confirmColor: kGreen);
+    if (ok != true) return;
+    try {
+      await _call({'action': 'approve', 'userId': u['id']});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"$email" aprovado!'), backgroundColor: kGreen));
+      _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: kRed));
+    }
+  }
+
+  Future<void> _reject(Map<String, dynamic> u) async {
+    final email = u['email'] as String? ?? '';
+    final ok = await confirmSheet(context,
+      title: 'Rejeitar cadastro',
+      body: 'Rejeitar e remover o usuário "$email"?
+Ele não poderá mais acessar o sistema.',
+      confirmLabel: 'Rejeitar');
+    if (ok != true) return;
+    try {
+      await _call({'action': 'reject', 'userId': u['id']});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Usuário rejeitado e removido')));
+      _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: kRed));
+    }
+  }
+
+  String _fmt(String? iso) {
+    if (iso == null) return '—';
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      return '${d.day.toString().padLeft(2,"0")}/${d.month.toString().padLeft(2,"0")}/${d.year} ${d.hour.toString().padLeft(2,"0")}:${d.minute.toString().padLeft(2,"0")}';
+    } catch (_) { return '—'; }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Pendentes (${_pending.length})', style: const TextStyle(fontSize: 16)),
+        elevation: 0,
+        bottom: PreferredSize(preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: Theme.of(context).dividerColor)),
+      ),
+      body: _loading
+        ? const Center(child: CircularProgressIndicator(color: kRed))
+        : _pending.isEmpty
+          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: const [
+              Icon(Icons.check_circle_outline, color: kGreen, size: 56),
+              SizedBox(height: 12),
+              Text('Nenhum cadastro pendente', style: TextStyle(color: kMuted, fontSize: 14)),
+            ]))
+          : RefreshIndicator(
+              onRefresh: _load, color: kRed,
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 40),
+                itemCount: _pending.length,
+                itemBuilder: (_, i) {
+                  final u = _pending[i];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Container(width: 38, height: 38,
+                            decoration: BoxDecoration(color: kOrange.withOpacity(0.12), shape: BoxShape.circle),
+                            child: const Icon(Icons.person_outline, color: kOrange, size: 20)),
+                          const SizedBox(width: 10),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(u['email'] as String? ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text('Cadastrado em: ${_fmt(u["created_at"])}', style: const TextStyle(fontSize: 11, color: kMuted)),
+                          ])),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: kOrange.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: kOrange.withOpacity(0.4))),
+                            child: const Text('Pendente', style: TextStyle(fontSize: 10, color: kOrange, fontWeight: FontWeight.w600))),
+                        ]),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(child: ElevatedButton.icon(
+                            onPressed: () => _approve(u),
+                            icon: const Icon(Icons.check, size: 16),
+                            label: const Text('Aprovar'),
+                            style: ElevatedButton.styleFrom(backgroundColor: kGreen, padding: const EdgeInsets.symmetric(vertical: 10)),
+                          )),
+                          const SizedBox(width: 8),
+                          Expanded(child: OutlinedButton.icon(
+                            onPressed: () => _reject(u),
+                            icon: const Icon(Icons.close, size: 16),
+                            label: const Text('Rejeitar'),
+                            style: OutlinedButton.styleFrom(side: const BorderSide(color: kRed), foregroundColor: kRed, padding: const EdgeInsets.symmetric(vertical: 10)),
+                          )),
+                        ]),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
   }
 }
