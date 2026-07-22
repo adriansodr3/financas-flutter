@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
+import 'screens/set_password_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/other_screens.dart';
 import 'screens/extra_screens.dart';
@@ -11,11 +12,24 @@ import 'screens/investments_screen.dart';
 const _supabaseUrl = 'https://gattydrrhmhuqysbsjol.supabase.co';
 const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdHR5ZHJyaG1odXF5c2Jzam9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTE0NDksImV4cCI6MjA5NzkyNzQ0OX0.dUhFtUY_SzL1A32LxZgVYpTSAzQ0s1xB8V6vgc9yxEo';
 
-// Notifier global para tema
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
+
+// Flag global: usuário veio de link de convite e precisa definir senha
+bool needsPasswordSetup = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Detectar token de convite na URL ANTES de inicializar o Supabase
+  try {
+    final uri = Uri.base;
+    final fragment = uri.fragment;
+    final params = Uri.splitQueryString(fragment);
+    if (params['type'] == 'invite') {
+      needsPasswordSetup = true;
+    }
+  } catch (_) {}
+
   await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseKey);
   runApp(const FinancasApp());
 }
@@ -27,7 +41,7 @@ class FinancasApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, mode, __) => MaterialApp(
-        title: 'Financas Pessoais',
+        title: 'Finanças Pessoais',
         theme: appThemeLight(),
         darkTheme: appTheme(),
         themeMode: mode,
@@ -49,6 +63,8 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Verificar sessão imediatamente ao abrir
+    WidgetsBinding.instance.addPostFrameCallback((_) => _validateSession());
   }
 
   @override
@@ -76,8 +92,17 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        final session = snapshot.data?.session ?? Supabase.instance.client.auth.currentSession;
-        if (session != null) return const _MainShell();
+        final event   = snapshot.data?.event;
+        final session = snapshot.data?.session
+            ?? Supabase.instance.client.auth.currentSession;
+
+        if (session != null) {
+          // Usuário logado via link de convite → pedir senha
+          if (needsPasswordSetup) {
+            return const SetPasswordScreen();
+          }
+          return const _MainShell();
+        }
         return const LoginScreen();
       },
     );
@@ -141,14 +166,14 @@ class _MainShellState extends State<_MainShell> {
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         height: 68,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined),        selectedIcon: Icon(Icons.home),              label: 'Inicio'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long),      label: 'Lancamentos'),
-          NavigationDestination(icon: Icon(Icons.credit_card_outlined),  selectedIcon: Icon(Icons.credit_card),       label: 'Parcelas'),
-          NavigationDestination(icon: Icon(Icons.push_pin_outlined),     selectedIcon: Icon(Icons.push_pin),          label: 'Fixos'),
-          NavigationDestination(icon: Icon(Icons.bar_chart_outlined),    selectedIcon: Icon(Icons.bar_chart),         label: 'Relatorios'),
-          NavigationDestination(icon: Icon(Icons.label_outline),         selectedIcon: Icon(Icons.label),             label: 'Categorias'),
-          NavigationDestination(icon: Icon(Icons.savings_outlined),      selectedIcon: Icon(Icons.savings),           label: 'Investimentos'),
-          NavigationDestination(icon: Icon(Icons.person_outline),        selectedIcon: Icon(Icons.person),            label: 'Perfil'),
+          NavigationDestination(icon: Icon(Icons.home_outlined),        selectedIcon: Icon(Icons.home),         label: 'Inicio'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Lancamentos'),
+          NavigationDestination(icon: Icon(Icons.credit_card_outlined),  selectedIcon: Icon(Icons.credit_card),  label: 'Parcelas'),
+          NavigationDestination(icon: Icon(Icons.push_pin_outlined),     selectedIcon: Icon(Icons.push_pin),     label: 'Fixos'),
+          NavigationDestination(icon: Icon(Icons.bar_chart_outlined),    selectedIcon: Icon(Icons.bar_chart),    label: 'Relatorios'),
+          NavigationDestination(icon: Icon(Icons.label_outline),         selectedIcon: Icon(Icons.label),        label: 'Categorias'),
+          NavigationDestination(icon: Icon(Icons.savings_outlined),      selectedIcon: Icon(Icons.savings),      label: 'Investimentos'),
+          NavigationDestination(icon: Icon(Icons.person_outline),        selectedIcon: Icon(Icons.person),       label: 'Perfil'),
         ],
       ),
     );
