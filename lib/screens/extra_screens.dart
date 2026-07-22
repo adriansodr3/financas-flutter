@@ -346,9 +346,88 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class ProfileScreenState extends State<ProfileScreen> {
-  void refresh() { setState(() {}); }
+  void refresh() { if (mounted) setState(() {}); }
   final _sb = Supabase.instance.client;
   String get _email => _sb.auth.currentUser?.email ?? '—';
+  String? _avatarUrl;
+  bool _uploadingAvatar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final url = await DB.getAvatarUrl();
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
+  Future<void> _changeAvatar() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (_avatarUrl != null) ListTile(
+          leading: const Icon(Icons.visibility_outlined),
+          title: const Text('Ver foto de perfil'),
+          onTap: () => Navigator.pop(context, 'view'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.photo_library_outlined),
+          title: const Text('Escolher da galeria'),
+          onTap: () => Navigator.pop(context, 'gallery'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.camera_alt_outlined),
+          title: const Text('Tirar foto'),
+          onTap: () => Navigator.pop(context, 'camera'),
+        ),
+        if (_avatarUrl != null) ListTile(
+          leading: const Icon(Icons.delete_outline, color: kRed),
+          title: const Text('Remover foto', style: TextStyle(color: kRed)),
+          onTap: () => Navigator.pop(context, 'remove'),
+        ),
+        const SizedBox(height: 8),
+      ])),
+    );
+
+    if (choice == 'view' && _avatarUrl != null) {
+      if (mounted) showDialog(
+        context: context,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(_avatarUrl!, fit: BoxFit.contain))));
+      return;
+    }
+
+    if (choice == 'remove') {
+      setState(() => _avatarUrl = null);
+      return;
+    }
+
+    ImageSource? source;
+    if (choice == 'gallery') source = ImageSource.gallery;
+    if (choice == 'camera')  source = ImageSource.camera;
+    if (source == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final file   = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
+      if (file == null) return;
+      setState(() => _uploadingAvatar = true);
+      final bytes = await file.readAsBytes();
+      final url   = await DB.uploadAvatar(bytes, 'image/jpeg');
+      if (mounted) setState(() { _avatarUrl = url; _uploadingAvatar = false; });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: $e'), backgroundColor: kRed));
+      }
+    }
+  }
 
   Future<void> _logout() async {
     final ok = await confirmSheet(context,
