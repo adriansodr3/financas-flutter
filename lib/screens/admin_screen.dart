@@ -186,12 +186,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               if (email.isEmpty || !email.contains('@')) return;
               Navigator.pop(ctx);
               try {
-                await _call({'action': 'invite', 'email': email});
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Convite enviado para $email'),
-                    backgroundColor: kGreen));
-                _load();
+                final result = await _call({'action': 'invite', 'email': email});
+                if (result is Map && result['error'] != null) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: ${result["error"]}'), backgroundColor: kRed));
+                } else {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Convite enviado para $email'), backgroundColor: kGreen));
+                  _load();
+                }
               } catch (e) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Erro: $e'), backgroundColor: kRed));

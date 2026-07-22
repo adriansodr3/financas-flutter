@@ -104,11 +104,23 @@ serve(async (req) => {
 
     // ── INVITE USER ─────────────────────────────────────────
     if (action === "invite") {
-      const { error } = await adminClient.auth.admin.inviteUserByEmail(email)
-      if (error) throw error
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      })
+      try {
+        const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+          redirectTo: "https://adriansodr3.github.io/financas-flutter/"
+        })
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message || JSON.stringify(error) }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          })
+        }
+        return new Response(JSON.stringify({ success: true, user: data?.user?.email }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        })
+      } catch (inviteErr) {
+        return new Response(JSON.stringify({ error: String(inviteErr) }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        })
+      }
     }
 
     // ── PENDING USERS ────────────────────────────────────────
