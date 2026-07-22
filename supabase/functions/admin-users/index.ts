@@ -99,6 +99,15 @@ serve(async (req) => {
       })
     }
 
+    // ── INVITE USER ─────────────────────────────────────────
+    if (action === "invite") {
+      const { error } = await adminClient.auth.admin.inviteUserByEmail(email)
+      if (error) throw error
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+
     return new Response(JSON.stringify({ error: "Ação inválida" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
     })

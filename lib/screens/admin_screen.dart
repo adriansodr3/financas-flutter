@@ -140,6 +140,60 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     }
   }
 
+  Future<void> _inviteUser() async {
+    final emailCtrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.mail_outline, color: kPurple, size: 22),
+          SizedBox(width: 8),
+          Text('Convidar usuário'),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text(
+            'O usuário receberá um e-mail com um link para criar a conta no aplicativo.',
+            style: TextStyle(fontSize: 13, color: kMuted)),
+          const SizedBox(height: 16),
+          TextField(
+            controller: emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'E-mail do convidado',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: kMuted))),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.send_outlined, size: 16),
+            label: const Text('Enviar convite'),
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              if (email.isEmpty || !email.contains('@')) return;
+              Navigator.pop(ctx);
+              try {
+                await _call({'action': 'invite', 'email': email});
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Convite enviado para $email'),
+                    backgroundColor: kGreen));
+                _load();
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Erro: $e'), backgroundColor: kRed));
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _resetPassword(Map<String, dynamic> u) async {
     final email = u['email'] as String? ?? '';
     final ok = await confirmSheet(context,
@@ -191,6 +245,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       appBar: AppBar(
         title: Text('Usuários (${_users.length})', style: const TextStyle(fontSize: 16)),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_outlined),
+            tooltip: 'Convidar usuário',
+            onPressed: _inviteUser,
+          ),
+          const SizedBox(width: 4),
+        ],
         bottom: PreferredSize(preferredSize: const Size.fromHeight(1),
           child: Divider(height: 1, color: Theme.of(context).dividerColor)),
       ),
