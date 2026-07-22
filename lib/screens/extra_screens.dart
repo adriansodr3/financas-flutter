@@ -367,6 +367,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     final hasPhoto = _avatarUrl != null;
     final choice = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
@@ -409,6 +410,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     if (choice == 'view' && _avatarUrl != null) {
       if (mounted) showDialog(
         context: context,
+        useRootNavigator: true,
         builder: (_) => Dialog(
           backgroundColor: Colors.transparent,
           child: ClipRRect(
