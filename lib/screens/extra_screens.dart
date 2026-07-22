@@ -364,31 +364,46 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changeAvatar() async {
+    final hasPhoto = _avatarUrl != null;
     final choice = await showModalBottomSheet<String>(
       context: context,
-      builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (_avatarUrl != null) ListTile(
-          leading: const Icon(Icons.visibility_outlined),
-          title: const Text('Ver foto de perfil'),
-          onTap: () => Navigator.pop(context, 'view'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.photo_library_outlined),
-          title: const Text('Escolher da galeria'),
-          onTap: () => Navigator.pop(context, 'gallery'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.camera_alt_outlined),
-          title: const Text('Tirar foto'),
-          onTap: () => Navigator.pop(context, 'camera'),
-        ),
-        if (_avatarUrl != null) ListTile(
-          leading: const Icon(Icons.delete_outline, color: kRed),
-          title: const Text('Remover foto', style: TextStyle(color: kRed)),
-          onTap: () => Navigator.pop(context, 'remove'),
-        ),
-        const SizedBox(height: 8),
-      ])),
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(color: kMuted.withOpacity(0.4), borderRadius: BorderRadius.circular(2))),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('Foto de Perfil', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+          const Divider(),
+          if (hasPhoto) ListTile(
+            leading: const Icon(Icons.visibility_outlined, color: kPurple),
+            title: const Text('Ver foto atual'),
+            onTap: () => Navigator.pop(ctx, 'view'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: kPurple),
+            title: const Text('Escolher da galeria'),
+            onTap: () => Navigator.pop(ctx, 'gallery'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined, color: kPurple),
+            title: const Text('Tirar foto com câmera'),
+            onTap: () => Navigator.pop(ctx, 'camera'),
+          ),
+          if (hasPhoto) ListTile(
+            leading: const Icon(Icons.delete_outline, color: kRed),
+            title: const Text('Remover foto', style: TextStyle(color: kRed)),
+            onTap: () => Navigator.pop(ctx, 'remove'),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      )),
     );
 
     if (choice == 'view' && _avatarUrl != null) {
@@ -475,28 +490,37 @@ class ProfileScreenState extends State<ProfileScreen> {
       bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Divider(height: 1, color: kBorder))),
     body: ListView(padding: const EdgeInsets.all(20), children: [
       // Avatar
-      Center(child: GestureDetector(
-        onTap: _changeAvatar,
-        child: Stack(alignment: Alignment.bottomRight, children: [
-          Container(
-            width: 88, height: 88,
-            decoration: BoxDecoration(
-              color: kPurple.withOpacity(0.15), shape: BoxShape.circle,
-              border: Border.all(color: kPurple.withOpacity(0.4), width: 2)),
-            child: _uploadingAvatar
-              ? const CircularProgressIndicator(color: kPurple, strokeWidth: 2)
-              : ClipOval(child: _avatarUrl != null
-                  ? Image.network(_avatarUrl!, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.person_outline, color: kPurple, size: 44))
-                  : const Icon(Icons.person_outline, color: kPurple, size: 44)),
+      Center(child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _changeAvatar,
+          borderRadius: BorderRadius.circular(50),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Stack(alignment: Alignment.bottomRight, children: [
+              Container(
+                width: 88, height: 88,
+                decoration: BoxDecoration(
+                  color: kPurple.withOpacity(0.15), shape: BoxShape.circle,
+                  border: Border.all(color: kPurple.withOpacity(0.4), width: 2)),
+                child: _uploadingAvatar
+                  ? const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(color: kPurple, strokeWidth: 2))
+                  : ClipOval(child: _avatarUrl != null
+                      ? Image.network(_avatarUrl!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.person_outline, color: kPurple, size: 44))
+                      : const Icon(Icons.person_outline, color: kPurple, size: 44)),
+              ),
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: kPurple, shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2)),
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 14)),
+            ]),
           ),
-          Container(
-            width: 28, height: 28,
-            decoration: BoxDecoration(
-              color: kPurple, shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2)),
-            child: const Icon(Icons.camera_alt, color: Colors.white, size: 14)),
-        ]),
+        ),
       )),
       const SizedBox(height: 12),
       Center(child: Text(_email, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
