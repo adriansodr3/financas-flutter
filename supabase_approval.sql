@@ -23,15 +23,18 @@ CREATE POLICY "service_role_all" ON user_profiles
 
 -- Função para criar perfil automaticamente ao registrar
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public AS $$
 BEGIN
-  INSERT INTO user_profiles (id, email, status)
+  -- Desativa RLS para garantir que o insert funcione mesmo com políticas ativas
+  PERFORM set_config('row_security', 'off', true);
+
+  INSERT INTO public.user_profiles (id, email, status)
   VALUES (
     NEW.id,
-    NEW.email,
+    COALESCE(NEW.email, ''),
     -- Usuários convidados são aprovados automaticamente
-    CASE WHEN NEW.raw_app_meta_data->>'provider' = 'email' 
-              AND NEW.invited_at IS NOT NULL
+    CASE WHEN NEW.invited_at IS NOT NULL
     THEN 'approved'
     ELSE 'pending'
     END
