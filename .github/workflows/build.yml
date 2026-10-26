@@ -159,6 +159,26 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
+      - name: Configurar PWA manifest (standalone para iOS)
+        run: |
+          python3 << 'PYEOF'
+          import json, os
+          manifest_path = 'web/manifest.json'
+          if os.path.exists(manifest_path):
+              with open(manifest_path) as f:
+                  m = json.load(f)
+              m['display'] = 'standalone'
+              m['name'] = 'Finanças Pessoais'
+              m['short_name'] = 'Finanças'
+              m['background_color'] = '#0F1117'
+              m['theme_color'] = '#6366F1'
+              with open(manifest_path, 'w') as f:
+                  json.dump(m, f, indent=2, ensure_ascii=False)
+              print('manifest.json atualizado:', m.get('display'))
+          else:
+              print('manifest.json não encontrado, pulando')
+          PYEOF
+
       - name: Build Web
         run: flutter build web --release --base-href "/financas-flutter/" --dart-define=SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
 

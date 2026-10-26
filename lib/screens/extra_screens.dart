@@ -1292,6 +1292,71 @@ class ProfileScreenState extends State<ProfileScreen> {
     if (ok == true) await _sb.auth.signOut();
   }
 
+  void _showInstallPwaSheet(BuildContext ctx) {
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: kPurple.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.add_to_home_screen, color: kPurple, size: 24),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Tela cheia no iPhone',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  Text('iOS não suporta tela cheia no browser',
+                      style: TextStyle(fontSize: 12, color: kMuted)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 20),
+            const Text(
+              'Para usar o app em tela cheia no seu iPhone, adicione-o à tela de início. '
+              'Depois é só abrir por lá e ele fica sem barra do navegador.',
+              style: TextStyle(fontSize: 14, color: kMuted, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            _PwaStep(
+              icon: Icons.ios_share_outlined,
+              text: 'Toque no ícone de compartilhar',
+              sub: 'O botão ⎙ na barra inferior do Brave/Safari',
+            ),
+            _PwaStep(
+              icon: Icons.add_box_outlined,
+              text: 'Selecione "Adicionar à Tela de Início"',
+              sub: 'Role a lista de opções para encontrar',
+            ),
+            _PwaStep(
+              icon: Icons.smartphone_outlined,
+              text: 'Abra pelo ícone na tela de início',
+              sub: 'O app abre em tela cheia, sem barra do browser',
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Entendi'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showThemePicker(BuildContext ctx) {
     showModalBottomSheet(
       context: ctx,
@@ -1534,8 +1599,12 @@ class ProfileScreenState extends State<ProfileScreen> {
             color: kMuted,
           ),
           title: Text(_isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'),
-          trailing: const Icon(Icons.chevron_right, color: kMuted),
-          onTap: () { toggleFullscreen(); setState(() => _isFullscreen = !_isFullscreen); },
+          trailing: isFullscreenSupported
+              ? const Icon(Icons.chevron_right, color: kMuted)
+              : const Icon(Icons.add_to_home_screen, color: kMuted, size: 20),
+          onTap: isFullscreenSupported
+              ? () { toggleFullscreen(); setState(() => _isFullscreen = !_isFullscreen); }
+              : () => _showInstallPwaSheet(context),
         ),
         const Divider(height: 1, color: kBorder),
         ListTile(
@@ -1678,5 +1747,43 @@ class ProfileScreenState extends State<ProfileScreen> {
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
+  }
+}
+
+// ── Widget auxiliar: passo de instrução PWA ───────────────
+class _PwaStep extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final String sub;
+  const _PwaStep({required this.icon, required this.text, required this.sub});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: kPurple.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: kPurple, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                Text(sub, style: const TextStyle(fontSize: 11, color: kMuted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
