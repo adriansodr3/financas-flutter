@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/set_password_screen.dart';
@@ -13,7 +14,17 @@ import 'screens/investments_screen.dart';
 const _supabaseUrl = 'https://cogmxnspkpqycygqlvwu.supabase.co';
 const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ214bnNwa3BxeWN5Z3Fsdnd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NzkzMjQsImV4cCI6MjA5MjU1NTMyNH0.fNSglyjQMvoCrPJCQZHIIuBguwsJwPE3DL3wO676aD8';
 
-final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
+const _kThemePrefKey = 'app_theme_id';
+
+/// Notifier do tema atual (id string, ex: 'dark_purple', 'light')
+final themeNotifier = ValueNotifier<String>('dark_purple');
+
+/// Salva o tema e atualiza o notifier
+Future<void> setTheme(String id) async {
+  themeNotifier.value = id;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kThemePrefKey, id);
+}
 
 // Flag global: usuário veio de link de convite e precisa definir senha
 final needsPasswordSetup = ValueNotifier<bool>(false);
@@ -32,6 +43,12 @@ Future<void> main() async {
   } catch (_) {}
 
   await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseKey);
+
+  // Carregar tema salvo
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString(_kThemePrefKey);
+  if (savedTheme != null) themeNotifier.value = savedTheme;
+
   runApp(const FinancasApp());
 }
 
@@ -39,13 +56,11 @@ class FinancasApp extends StatelessWidget {
   const FinancasApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
+    return ValueListenableBuilder<String>(
       valueListenable: themeNotifier,
-      builder: (_, mode, __) => MaterialApp(
+      builder: (_, themeId, __) => MaterialApp(
         title: 'Finanças Pessoais',
-        theme: appThemeLight(),
-        darkTheme: appTheme(),
-        themeMode: mode,
+        theme: buildTheme(themeById(themeId)),
         debugShowCheckedModeBanner: false,
         home: const _AuthGate(),
       ),

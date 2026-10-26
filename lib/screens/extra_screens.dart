@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'admin_screen.dart';
-import '../main.dart' show themeNotifier;
+import '../main.dart' show themeNotifier, setTheme;
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
@@ -1279,6 +1279,91 @@ class ProfileScreenState extends State<ProfileScreen> {
     if (ok == true) await _sb.auth.signOut();
   }
 
+  void _showThemePicker(BuildContext ctx) {
+    showModalBottomSheet(
+      context: ctx,
+      builder: (_) => ValueListenableBuilder<String>(
+        valueListenable: themeNotifier,
+        builder: (_, currentId, __) => Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Escolher Tema',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 20),
+              ...kThemes.map((t) {
+                final selected = t.id == currentId;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: InkWell(
+                    onTap: () { setTheme(t.id); Navigator.pop(ctx); },
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: t.bg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected ? t.accent : t.border,
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Mini preview
+                          Container(
+                            width: 38, height: 38,
+                            decoration: BoxDecoration(
+                              color: t.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: t.border),
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 20, height: 20,
+                                decoration: BoxDecoration(
+                                  color: t.accent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(t.label,
+                                  style: TextStyle(
+                                    color: t.text,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  )),
+                                Text(t.isDark ? 'Escuro' : 'Claro',
+                                  style: TextStyle(color: t.muted, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          if (selected)
+                            Icon(Icons.check_circle, color: t.accent, size: 22)
+                          else
+                            Icon(Icons.circle_outlined, color: t.muted, size: 22),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _changePassword() async {
     final ctrl = TextEditingController();
     final ctrl2 = TextEditingController();
@@ -1364,17 +1449,31 @@ class ProfileScreenState extends State<ProfileScreen> {
           onTap: _changePassword,
         ),
         const Divider(height: 1, color: kBorder),
-        ValueListenableBuilder(
+        ValueListenableBuilder<String>(
           valueListenable: themeNotifier,
-          builder: (_, mode, __) => ListTile(
-            leading: Icon(mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: kMuted),
-            title: Text(mode == ThemeMode.dark ? 'Tema: Escuro' : 'Tema: Claro', style: const TextStyle()),
-            trailing: Switch(
-              value: mode == ThemeMode.dark,
-              onChanged: (v) => themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light,
-              activeColor: kPurple,
-            ),
-          ),
+          builder: (_, themeId, __) {
+            final cfg = themeById(themeId);
+            return ListTile(
+              leading: const Icon(Icons.palette_outlined, color: kMuted),
+              title: Text('Tema: ${cfg.label}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 20, height: 20,
+                    decoration: BoxDecoration(
+                      color: cfg.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: kBorder, width: 1.5),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right, color: kMuted),
+                ],
+              ),
+              onTap: () => _showThemePicker(context),
+            );
+          },
         ),
         const Divider(height: 1, color: kBorder),
         ListTile(

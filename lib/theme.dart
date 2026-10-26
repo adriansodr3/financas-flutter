@@ -1,124 +1,163 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Cores base (modo escuro) ──────────────────────────────
+// ── Cores semânticas (independentes do tema) ──────────────
+const kGreen     = Color(0xFF22C55E);
+const kRed       = Color(0xFFEF4444);
+const kOrange    = Color(0xFFF97316);
+
+// ── Cores do tema ativo (redirecionam para o tema atual) ──
+// Usadas diretamente no código — serão substituídas pelo tema selecionado.
+// Para compatibilidade, mantemos como constantes do tema padrão (Roxo Escuro).
+const kPurple    = Color(0xFF6366F1);
 const kBg        = Color(0xFF0F1117);
 const kSurface   = Color(0xFF1A1D27);
 const kCard      = Color(0xFF20232F);
 const kBorder    = Color(0xFF2D3148);
-
-// ── Cores semânticas (independentes do tema) ──────────────
-const kPurple    = Color(0xFF6366F1);
-const kGreen     = Color(0xFF22C55E);
-const kRed       = Color(0xFFEF4444);
-const kOrange    = Color(0xFFF97316);
 const kMuted     = Color(0xFF64748B);
 const kText      = Color(0xFFE2E8F0);
 const kTextDim   = Color(0xFF94A3B8);
 
-ThemeData appTheme() {
-  final base = ThemeData.dark(useMaterial3: true);
+// ── Configuração de tema ──────────────────────────────────
+class AppThemeConfig {
+  final String id;
+  final String label;
+  final Color accent;
+  final Color bg;
+  final Color surface;
+  final Color card;
+  final Color border;
+  final Color text;
+  final Color textDim;
+  final Color muted;
+  final bool isDark;
+
+  const AppThemeConfig({
+    required this.id,
+    required this.label,
+    required this.accent,
+    required this.bg,
+    required this.surface,
+    required this.card,
+    required this.border,
+    required this.text,
+    required this.textDim,
+    required this.muted,
+    required this.isDark,
+  });
+}
+
+// ── Catálogo de temas ─────────────────────────────────────
+const kThemes = <AppThemeConfig>[
+  AppThemeConfig(
+    id: 'dark_purple', label: 'Roxo Escuro',
+    accent: Color(0xFF6366F1),
+    bg: Color(0xFF0F1117), surface: Color(0xFF1A1D27),
+    card: Color(0xFF20232F), border: Color(0xFF2D3148),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_blue', label: 'Azul Escuro',
+    accent: Color(0xFF3B82F6),
+    bg: Color(0xFF0A0F1E), surface: Color(0xFF131929),
+    card: Color(0xFF1A2236), border: Color(0xFF263355),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_green', label: 'Verde Escuro',
+    accent: Color(0xFF10B981),
+    bg: Color(0xFF081510), surface: Color(0xFF0F2017),
+    card: Color(0xFF152B1E), border: Color(0xFF1E3F2A),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'oled', label: 'OLED Preto',
+    accent: Color(0xFF6366F1),
+    bg: Color(0xFF000000), surface: Color(0xFF0D0D0D),
+    card: Color(0xFF111111), border: Color(0xFF1F1F1F),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'light', label: 'Claro',
+    accent: Color(0xFF6366F1),
+    bg: Color(0xFFF1F5F9), surface: Color(0xFFFFFFFF),
+    card: Color(0xFFFFFFFF), border: Color(0xFFE2E8F0),
+    text: Color(0xFF1E293B), textDim: Color(0xFF475569), muted: Color(0xFF64748B),
+    isDark: false,
+  ),
+];
+
+AppThemeConfig themeById(String id) =>
+    kThemes.firstWhere((t) => t.id == id, orElse: () => kThemes.first);
+
+// ── Builder de ThemeData a partir de AppThemeConfig ───────
+ThemeData buildTheme(AppThemeConfig t) {
+  final base = t.isDark ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true);
+  final scheme = t.isDark
+      ? ColorScheme.dark(
+          primary: t.accent, secondary: kGreen,
+          surface: t.surface, error: kRed,
+          onPrimary: Colors.white, onSurface: t.text)
+      : ColorScheme.light(
+          primary: t.accent, secondary: kGreen,
+          surface: t.surface, error: kRed,
+          onPrimary: Colors.white, onSurface: t.text);
+
   return base.copyWith(
-    colorScheme: const ColorScheme.dark(
-      primary: kPurple,
-      secondary: kGreen,
-      surface: kSurface,
-      error: kRed,
-      onPrimary: Colors.white,
-      onSurface: kText,
-    ),
-    scaffoldBackgroundColor: kBg,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: t.bg,
     textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
-      bodyColor: kText, displayColor: kText),
+      bodyColor: t.text, displayColor: t.text,
+      decorationColor: t.text),
     cardTheme: CardTheme(
-      color: kCard, elevation: 0,
+      color: t.card, elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: kBorder, width: 1)),
+        side: BorderSide(color: t.border, width: 1)),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      filled: true, fillColor: kCard,
-      border:         OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
-      enabledBorder:  OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
-      focusedBorder:  OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kPurple, width: 2)),
-      labelStyle: const TextStyle(color: kMuted),
-      hintStyle:  const TextStyle(color: kMuted),
+      filled: true, fillColor: t.card,
+      border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.border)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.border)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.accent, width: 2)),
+      labelStyle: TextStyle(color: t.muted),
+      hintStyle:  TextStyle(color: t.muted),
+      prefixStyle: TextStyle(color: t.text),
+      suffixStyle: TextStyle(color: t.text),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
-      backgroundColor: kPurple, foregroundColor: Colors.white,
+      backgroundColor: t.accent, foregroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.symmetric(vertical: 14))),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: kSurface,
-      indicatorColor: kPurple.withOpacity(0.2),
-      labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11, color: kText))),
-    dividerTheme: const DividerThemeData(color: kBorder, thickness: 1),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: kSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20)))),
+      backgroundColor: t.surface,
+      indicatorColor: t.accent.withOpacity(0.2),
+      labelTextStyle: WidgetStateProperty.all(TextStyle(fontSize: 11, color: t.text))),
+    dividerTheme: DividerThemeData(color: t.border, thickness: 1),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: t.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20)))),
     dialogTheme: DialogTheme(
-      backgroundColor: kSurface,
+      backgroundColor: t.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: kSurface, foregroundColor: kText, elevation: 0),
-    popupMenuTheme: const PopupMenuThemeData(color: kSurface),
+    appBarTheme: AppBarTheme(
+      backgroundColor: t.surface, foregroundColor: t.text, elevation: 0),
+    popupMenuTheme: PopupMenuThemeData(color: t.surface),
+    chipTheme: ChipThemeData(
+      backgroundColor: t.card,
+      side: BorderSide(color: t.border),
+      labelStyle: TextStyle(color: t.text),
+    ),
   );
 }
 
-ThemeData appThemeLight() {
-  const bgLight      = Color(0xFFF1F5F9);
-  const surfaceLight = Color(0xFFFFFFFF);
-  const cardLight    = Color(0xFFFFFFFF);
-  const borderLight  = Color(0xFFE2E8F0);
-  const textLight    = Color(0xFF1E293B);
-  const textDimLight = Color(0xFF64748B);
-
-  final base = ThemeData.light(useMaterial3: true);
-  return base.copyWith(
-    colorScheme: const ColorScheme.light(
-      primary: kPurple, secondary: kGreen,
-      surface: surfaceLight,
-      error: kRed, onPrimary: Colors.white, onSurface: textLight),
-    scaffoldBackgroundColor: bgLight,
-    textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
-      bodyColor: textLight, displayColor: textLight,
-      decorationColor: textLight),
-    cardTheme: CardTheme(
-      color: cardLight, elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: borderLight, width: 1)),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true, fillColor: surfaceLight,
-      border:         OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: borderLight)),
-      enabledBorder:  OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: borderLight)),
-      focusedBorder:  OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kPurple, width: 2)),
-      labelStyle: const TextStyle(color: textDimLight),
-      hintStyle:  const TextStyle(color: textDimLight),
-      prefixStyle: const TextStyle(color: textLight),
-      suffixStyle: const TextStyle(color: textLight),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
-      backgroundColor: kPurple, foregroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      padding: const EdgeInsets.symmetric(vertical: 14))),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: surfaceLight,
-      indicatorColor: kPurple.withOpacity(0.15),
-      labelTextStyle: WidgetStateProperty.all(TextStyle(fontSize: 11, color: textLight))),
-    dividerTheme: const DividerThemeData(color: borderLight, thickness: 1),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: surfaceLight,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20)))),
-    dialogTheme: DialogTheme(
-      backgroundColor: surfaceLight,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: surfaceLight, foregroundColor: textLight, elevation: 0),
-    popupMenuTheme: const PopupMenuThemeData(color: surfaceLight),
-  );
-}
+// ── Atalhos legados (compatibilidade com código existente) ─
+ThemeData appTheme() => buildTheme(kThemes[0]);
+ThemeData appThemeLight() => buildTheme(kThemes[4]);
 
 IconData iconData(String name) => _kIconMap[name] ?? Icons.more_horiz;
 
