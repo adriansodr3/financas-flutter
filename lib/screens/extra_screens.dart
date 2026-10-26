@@ -572,6 +572,18 @@ class ProfileScreenState extends State<ProfileScreen> {
         )),
         const SizedBox(height: 8),
       ],
+      // Reset de dados
+      const SizedBox(height: 8),
+      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+        onPressed: _resetData,
+        icon: const Icon(Icons.delete_sweep_outlined, color: kRed),
+        label: const Text('Resetar Todos os Dados', style: TextStyle(color: kRed)),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: kRed),
+          foregroundColor: kRed,
+        ),
+      )),
+      const SizedBox(height: 8),
       SizedBox(width: double.infinity, child: ElevatedButton.icon(
         onPressed: _logout,
         icon: const Icon(Icons.logout),
@@ -581,3 +593,104 @@ class ProfileScreenState extends State<ProfileScreen> {
     ]),
   );
 }
+
+  Future<void> _resetData() async {
+    // Primeira confirmação
+    final first = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kSurface,
+        title: const Text('Resetar todos os dados?',
+            style: TextStyle(color: kText, fontSize: 17)),
+        content: const Text(
+          'Isso vai apagar permanentemente todas as suas transações, '
+          'despesas fixas, investimentos e categorias personalizadas.\n\n'
+          'Esta ação não pode ser desfeita.',
+          style: TextStyle(color: kMuted, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar', style: TextStyle(color: kMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continuar', style: TextStyle(color: kRed)),
+          ),
+        ],
+      ),
+    );
+
+    if (first != true || !mounted) return;
+
+    // Segunda confirmação — digitar "RESETAR"
+    final confirmCtrl = TextEditingController();
+    final second = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          backgroundColor: kSurface,
+          title: const Text('Confirme o reset',
+              style: TextStyle(color: kText, fontSize: 17)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text(
+              'Digite RESETAR abaixo para confirmar:',
+              style: TextStyle(color: kMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                hintText: 'RESETAR',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setStateDialog(() {}),
+            ),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar', style: TextStyle(color: kMuted)),
+            ),
+            ElevatedButton(
+              onPressed: confirmCtrl.text.trim() == 'RESETAR'
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              style: ElevatedButton.styleFrom(backgroundColor: kRed),
+              child: const Text('Resetar tudo'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    confirmCtrl.dispose();
+    if (second != true || !mounted) return;
+
+    // Executar reset
+    setState(() => _uploadingAvatar = true); // reutiliza flag de loading
+    try {
+      await DB.resetAllData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Todos os dados foram resetados.'),
+            backgroundColor: kGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao resetar: $e'),
+            backgroundColor: kRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }

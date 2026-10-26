@@ -711,6 +711,21 @@ class DB {
     }
   }
 
+  // ── Reset all user data ───────────────────────────────────
+
+  static Future<void> resetAllData() async {
+    final id = uid;
+    // Apaga na ordem correta para respeitar FK
+    await _sb.from('installments').delete().eq('user_id', id);
+    await _sb.from('fixed_skipped').delete().eq('user_id', id);
+    await _sb.from('fixed_expenses').delete().eq('user_id', id);
+    await _sb.from('transactions').delete().eq('user_id', id);
+    await _sb.from('investments').delete().eq('user_id', id);
+    await _sb.from('categories').delete().eq('user_id', id);
+    // Recria categorias padrão
+    await seedDefaultCategories();
+  }
+
   // ── Session validation ────────────────────────────────────
 
   static Future<bool> isSessionValid() async {
