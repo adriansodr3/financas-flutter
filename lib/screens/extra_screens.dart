@@ -592,7 +592,6 @@ class ProfileScreenState extends State<ProfileScreen> {
       )),
     ]),
   );
-  }
 
   Future<void> _resetData() async {
     // Primeira confirmação
