@@ -41,55 +41,41 @@ jobs:
         run: |
           python3 << 'PYEOF'
           import os, re
-
-          # 1. Forcar kotlin_version no root build.gradle
-          for path in ["android/build.gradle", "android/build.gradle.kts"]:
+          KOTLIN_VER = '1.9.23'
+          RESOLUTION = (
+            '\nconfigurations.all {\n'
+            '    resolutionStrategy {\n'
+            '        force "org.jetbrains.kotlin:kotlin-stdlib:' + KOTLIN_VER + '"\n'
+            '        force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:' + KOTLIN_VER + '"\n'
+            '        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:' + KOTLIN_VER + '"\n'
+            '    }\n'
+            '}\n'
+          )
+          for path in ['android/build.gradle', 'android/build.gradle.kts']:
               if not os.path.exists(path):
                   continue
               content = open(path).read()
-              changed = False
-
-              # Substituir versao existente
               new_content = re.sub(
                   r"(ext\.kotlin_version\s*=\s*)['\"][\d.]+['\"]",
-                  r"\g<1>'1.9.23'",
+                  r"\g<1>'" + KOTLIN_VER + "'",
                   content
               )
-              if new_content != content:
-                  changed = True
-                  content = new_content
-
-              # Se nao tinha, injetar no bloco buildscript
-              if 'kotlin_version' not in content and 'buildscript' in content:
-                  content = re.sub(
+              if new_content == content and 'kotlin_version' not in content and 'buildscript' in content:
+                  new_content = re.sub(
                       r'(buildscript\s*\{)',
-                      "\\1\n    ext.kotlin_version = '1.9.23'",
+                      r'\1\n    ext.kotlin_version = "' + KOTLIN_VER + '"',
                       content, count=1
                   )
-                  changed = True
-
-              if changed:
-                  open(path, "w").write(content)
-                  print(f"Kotlin version forced in {path}")
-
-          # 2. Adicionar resolutionStrategy no app/build.gradle para forcão via configurations
-          for path in ["android/app/build.gradle", "android/app/build.gradle.kts"]:
+              if new_content != content:
+                  open(path, 'w').write(new_content)
+                  print('Kotlin version forced in ' + path)
+          for path in ['android/app/build.gradle', 'android/app/build.gradle.kts']:
               if not os.path.exists(path):
                   continue
               content = open(path).read()
-              resolution = """
-          configurations.all {
-              resolutionStrategy {
-                  force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
-                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
-                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
-              }
-          }
-"""
               if 'resolutionStrategy' not in content:
-                  content = content + resolution
-                  open(path, "w").write(content)
-                  print(f"resolutionStrategy added to {path}")
+                  open(path, 'w').write(content + RESOLUTION)
+                  print('resolutionStrategy added to ' + path)
           PYEOF
 
       - name: Patch pub cache - corrigir build.gradle com flutter.minSdkVersion
