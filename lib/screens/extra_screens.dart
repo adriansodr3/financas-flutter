@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'admin_screen.dart';
 import '../main.dart' show themeNotifier, setTheme;
+import '../utils/fullscreen.dart';
 import '../models/models.dart';
 import '../services/db.dart';
 import '../theme.dart';
@@ -1176,11 +1177,23 @@ class ProfileScreenState extends State<ProfileScreen> {
   String get _email => _sb.auth.currentUser?.email ?? '—';
   String? _avatarUrl;
   bool _uploadingAvatar = false;
+  bool _isFullscreen = false;
+  late final _fsSub = onFullscreenChange.listen((v) {
+    if (mounted) setState(() => _isFullscreen = v);
+  });
 
   @override
   void initState() {
     super.initState();
+    _isFullscreen = isFullscreen;
+    _fsSub; // inicia o listener
     _loadAvatar();
+  }
+
+  @override
+  void dispose() {
+    _fsSub.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAvatar() async {
@@ -1513,6 +1526,16 @@ class ProfileScreenState extends State<ProfileScreen> {
               onTap: () => _showThemePicker(context),
             );
           },
+        ),
+        const Divider(height: 1, color: kBorder),
+        ListTile(
+          leading: Icon(
+            _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+            color: kMuted,
+          ),
+          title: Text(_isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'),
+          trailing: const Icon(Icons.chevron_right, color: kMuted),
+          onTap: () { toggleFullscreen(); setState(() => _isFullscreen = !_isFullscreen); },
         ),
         const Divider(height: 1, color: kBorder),
         ListTile(
