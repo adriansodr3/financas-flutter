@@ -726,6 +726,92 @@ class DB {
     await seedDefaultCategories();
   }
 
+  // ── Reports helpers ──────────────────────────────────────
+
+  /// Retorna stats de receita/despesa para um mês, classificando despesas
+  /// em fixas, parceladas e variáveis.
+  static Future<Map<String, double>> getMonthStats(int year, int month) async {
+    final txs = await getTransactions(year, month);
+    double income = 0, expense = 0, fixedExp = 0, instExp = 0, varExp = 0;
+    for (final t in txs) {
+      if (t.type == 'income') {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+        if (t.isFixed) fixedExp += t.amount;
+        else if (t.installmentId != null) instExp += t.amount;
+        else varExp += t.amount;
+      }
+    }
+    return {
+      'income': income,
+      'expense': expense,
+      'fixedExp': fixedExp,
+      'instExp': instExp,
+      'varExp': varExp,
+    };
+  }
+
+  /// Retorna dados mensais para os últimos [months] meses (uma query só).
+  static Future<List<Map<String, dynamic>>> getEvolution(
+      int year, int month, {int months = 6}) async {
+    // Calcular mês inicial
+    int startM = month - months + 1;
+    int startY = year;
+    while (startM <= 0) { startM += 12; startY--; }
+
+    final start = '${startY.toString().padLeft(4,'0')}-${startM.toString().padLeft(2,'0')}-01';
+    final endM = month == 12 ? 1 : month + 1;
+    final endY = month == 12 ? year + 1 : year;
+    final end = '${endY.toString().padLeft(4,'0')}-${endM.toString().padLeft(2,'0')}-01';
+
+    final data = await _sb
+        .from('transactions')
+        .select('type, amount, date, is_fixed, installment_id')
+        .eq('user_id', uid)
+        .gte('date', start)
+        .lt('date', end);
+
+    // Inicializar mapa com todos os meses no intervalo
+    final Map<String, Map<String, double>> byMonth = {};
+    for (int i = 0; i < months; i++) {
+      int m = month - (months - 1 - i);
+      int y = year;
+      while (m <= 0) { m += 12; y--; }
+      while (m > 12) { m -= 12; y++; }
+      final key = '${y.toString().padLeft(4,'0')}-${m.toString().padLeft(2,'0')}';
+      byMonth[key] = {'income': 0, 'expense': 0, 'fixedExp': 0, 'instExp': 0, 'varExp': 0};
+    }
+
+    for (final r in data as List) {
+      final key = (r['date'] as String).substring(0, 7);
+      if (!byMonth.containsKey(key)) continue;
+      final amount = (r['amount'] as num).toDouble();
+      final type = r['type'] as String;
+      final isFixed = r['is_fixed'] as bool? ?? false;
+      final hasInst = r['installment_id'] != null;
+      if (type == 'income') {
+        byMonth[key]!['income'] = byMonth[key]!['income']! + amount;
+      } else {
+        byMonth[key]!['expense'] = byMonth[key]!['expense']! + amount;
+        if (isFixed) byMonth[key]!['fixedExp'] = byMonth[key]!['fixedExp']! + amount;
+        else if (hasInst) byMonth[key]!['instExp'] = byMonth[key]!['instExp']! + amount;
+        else byMonth[key]!['varExp'] = byMonth[key]!['varExp']! + amount;
+      }
+    }
+
+    final sorted = byMonth.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return sorted.map((e) {
+      final parts = e.key.split('-');
+      return <String, dynamic>{
+        'year': int.parse(parts[0]),
+        'month': int.parse(parts[1]),
+        'key': e.key,
+        ...e.value,
+      };
+    }).toList();
+  }
+
   // ── Session validation ────────────────────────────────────
 
   static Future<bool> isSessionValid() async {
