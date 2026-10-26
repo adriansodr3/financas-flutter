@@ -10,8 +10,8 @@ import 'screens/extra_screens.dart';
 import 'screens/fixed_screen.dart';
 import 'screens/investments_screen.dart';
 
-const _supabaseUrl = 'https://gattydrrhmhuqysbsjol.supabase.co';
-const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdHR5ZHJyaG1odXF5c2Jzam9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTE0NDksImV4cCI6MjA5NzkyNzQ0OX0.dUhFtUY_SzL1A32LxZgVYpTSAzQ0s1xB8V6vgc9yxEo';
+const _supabaseUrl = 'https://cogmxnspkpqycygqlvwu.supabase.co';
+const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ214bnNwa3BxeWN5Z3Fsdnd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NzkzMjQsImV4cCI6MjA5MjU1NTMyNH0.fNSglyjQMvoCrPJCQZHIIuBguwsJwPE3DL3wO676aD8';
 
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
 
