@@ -1282,84 +1282,123 @@ class ProfileScreenState extends State<ProfileScreen> {
   void _showThemePicker(BuildContext ctx) {
     showModalBottomSheet(
       context: ctx,
+      isScrollControlled: true,
       builder: (_) => ValueListenableBuilder<String>(
         valueListenable: themeNotifier,
-        builder: (_, currentId, __) => Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Escolher Tema',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 20),
-              ...kThemes.map((t) {
-                final selected = t.id == currentId;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: InkWell(
-                    onTap: () { setTheme(t.id); Navigator.pop(ctx); },
+        builder: (_, currentId, __) {
+          final darkThemes  = kThemes.where((t) => t.isDark).toList();
+          final lightThemes = kThemes.where((t) => !t.isDark).toList();
+
+          Widget themeRow(AppThemeConfig t) {
+            final selected = t.id == currentId;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                onTap: () { setTheme(t.id); Navigator.pop(ctx); },
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: t.bg,
                     borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: t.bg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected ? t.accent : t.border,
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          // Mini preview
-                          Container(
-                            width: 38, height: 38,
-                            decoration: BoxDecoration(
-                              color: t.surface,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: t.border),
-                            ),
-                            child: Center(
-                              child: Container(
-                                width: 20, height: 20,
-                                decoration: BoxDecoration(
-                                  color: t.accent,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(t.label,
-                                  style: TextStyle(
-                                    color: t.text,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  )),
-                                Text(t.isDark ? 'Escuro' : 'Claro',
-                                  style: TextStyle(color: t.muted, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          if (selected)
-                            Icon(Icons.check_circle, color: t.accent, size: 22)
-                          else
-                            Icon(Icons.circle_outlined, color: t.muted, size: 22),
-                        ],
-                      ),
+                    border: Border.all(
+                      color: selected ? t.accent : t.border,
+                      width: selected ? 2 : 1,
                     ),
                   ),
-                );
-              }),
-            ],
-          ),
-        ),
+                  child: Row(
+                    children: [
+                      // Mini preview: surface + accent dot
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: t.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: t.border),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 18, height: 18,
+                            decoration: BoxDecoration(
+                              color: t.accent, shape: BoxShape.circle),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(t.label,
+                              style: TextStyle(
+                                color: t.text, fontWeight: FontWeight.w600, fontSize: 14)),
+                            Text(t.isDark ? 'Escuro' : 'Claro',
+                              style: TextStyle(color: t.muted, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      if (selected)
+                        Icon(Icons.check_circle, color: t.accent, size: 22)
+                      else
+                        Icon(Icons.radio_button_unchecked, color: t.muted, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.92,
+            builder: (_, scrollCtrl) => Column(
+              children: [
+                // Handle
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: kBorder, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Escolher Tema',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(4, 0, 0, 8),
+                        child: Text('ESCUROS',
+                          style: TextStyle(fontSize: 11, color: kMuted,
+                              letterSpacing: 1.1, fontWeight: FontWeight.w600)),
+                      ),
+                      ...darkThemes.map(themeRow),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(4, 8, 0, 8),
+                        child: Text('CLAROS',
+                          style: TextStyle(fontSize: 11, color: kMuted,
+                              letterSpacing: 1.1, fontWeight: FontWeight.w600)),
+                      ),
+                      ...lightThemes.map(themeRow),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

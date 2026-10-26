@@ -49,8 +49,9 @@ class AppThemeConfig {
 
 // ── Catálogo de temas ─────────────────────────────────────
 const kThemes = <AppThemeConfig>[
+  // ── Escuros ──
   AppThemeConfig(
-    id: 'dark_purple', label: 'Roxo Escuro',
+    id: 'dark_purple', label: 'Roxo',
     accent: Color(0xFF6366F1),
     bg: Color(0xFF0F1117), surface: Color(0xFF1A1D27),
     card: Color(0xFF20232F), border: Color(0xFF2D3148),
@@ -58,7 +59,7 @@ const kThemes = <AppThemeConfig>[
     isDark: true,
   ),
   AppThemeConfig(
-    id: 'dark_blue', label: 'Azul Escuro',
+    id: 'dark_blue', label: 'Azul',
     accent: Color(0xFF3B82F6),
     bg: Color(0xFF0A0F1E), surface: Color(0xFF131929),
     card: Color(0xFF1A2236), border: Color(0xFF263355),
@@ -66,10 +67,42 @@ const kThemes = <AppThemeConfig>[
     isDark: true,
   ),
   AppThemeConfig(
-    id: 'dark_green', label: 'Verde Escuro',
+    id: 'dark_green', label: 'Verde',
     accent: Color(0xFF10B981),
     bg: Color(0xFF081510), surface: Color(0xFF0F2017),
     card: Color(0xFF152B1E), border: Color(0xFF1E3F2A),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_red', label: 'Vermelho',
+    accent: Color(0xFFEF4444),
+    bg: Color(0xFF150A0A), surface: Color(0xFF211010),
+    card: Color(0xFF2A1414), border: Color(0xFF3F1E1E),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_orange', label: 'Laranja',
+    accent: Color(0xFFF97316),
+    bg: Color(0xFF130E08), surface: Color(0xFF1E1510),
+    card: Color(0xFF271C13), border: Color(0xFF3D2A1A),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_pink', label: 'Rosa',
+    accent: Color(0xFFEC4899),
+    bg: Color(0xFF130B12), surface: Color(0xFF1E1020),
+    card: Color(0xFF28152A), border: Color(0xFF3D1E40),
+    text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
+    isDark: true,
+  ),
+  AppThemeConfig(
+    id: 'dark_gray', label: 'Cinza',
+    accent: Color(0xFF94A3B8),
+    bg: Color(0xFF0D0D0F), surface: Color(0xFF18181B),
+    card: Color(0xFF1E1E24), border: Color(0xFF2D2D35),
     text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
     isDark: true,
   ),
@@ -81,12 +114,21 @@ const kThemes = <AppThemeConfig>[
     text: Color(0xFFE2E8F0), textDim: Color(0xFF94A3B8), muted: Color(0xFF64748B),
     isDark: true,
   ),
+  // ── Claros ──
   AppThemeConfig(
     id: 'light', label: 'Claro',
     accent: Color(0xFF6366F1),
     bg: Color(0xFFF1F5F9), surface: Color(0xFFFFFFFF),
     card: Color(0xFFFFFFFF), border: Color(0xFFE2E8F0),
     text: Color(0xFF1E293B), textDim: Color(0xFF475569), muted: Color(0xFF64748B),
+    isDark: false,
+  ),
+  AppThemeConfig(
+    id: 'light_warm', label: 'Bege',
+    accent: Color(0xFF92400E),
+    bg: Color(0xFFFAF7F2), surface: Color(0xFFFFFDF8),
+    card: Color(0xFFFFFDF8), border: Color(0xFFE7E0D5),
+    text: Color(0xFF292118), textDim: Color(0xFF5C4F3D), muted: Color(0xFF8C7B6B),
     isDark: false,
   ),
 ];
