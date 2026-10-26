@@ -23,7 +23,15 @@ class ReportsScreenState extends State<ReportsScreen>
   void load() { _loadAll(); }
 
   late TabController _tab;
+
+  // modo mês
   int _year = DateTime.now().year, _month = DateTime.now().month;
+
+  // modo período
+  bool _isPeriod = false;
+  int _startYear = DateTime.now().year, _startMonth = 1;
+  int _endYear   = DateTime.now().year, _endMonth   = DateTime.now().month;
+
   bool _loading = true;
 
   // dados
@@ -53,32 +61,154 @@ class ReportsScreenState extends State<ReportsScreen>
 
   Future<void> _loadAll() async {
     setState(() => _loading = true);
-    final results = await Future.wait([
-      DB.getMonthStats(_year, _month),
-      DB.getSummaryByCategory(_year, _month),
-      DB.getBalanceBefore(_year, _month),
-      DB.getEvolution(_year, _month),
-      DB.getInvestments(),
-    ]);
-    final stats = results[0] as Map<String, double>;
+    late Map<String, double> stats;
+    late List<Map<String, dynamic>> catSum;
+    late List<Map<String, dynamic>> evol;
+
+    if (_isPeriod) {
+      final results = await Future.wait([
+        DB.getStatsForPeriod(_startYear, _startMonth, _endYear, _endMonth),
+        DB.getSummaryByCategoryForPeriod(_startYear, _startMonth, _endYear, _endMonth),
+        DB.getBalanceBefore(_startYear, _startMonth),
+        DB.getEvolutionForPeriod(_startYear, _startMonth, _endYear, _endMonth),
+        DB.getInvestments(),
+      ]);
+      stats  = results[0] as Map<String, double>;
+      catSum = results[1] as List<Map<String, dynamic>>;
+      _balanceBefore = results[2] as double;
+      evol   = results[3] as List<Map<String, dynamic>>;
+      final invs = results[4] as List<Map<String, dynamic>>;
+      double ap=0, rs=0, rd=0;
+      for (final i in invs) {
+        final amt = (i['amount'] as num).toDouble();
+        if (i['type']=='aporte') ap+=amt;
+        else if (i['type']=='resgate') rs+=amt;
+        else if (i['type']=='rendimento') rd+=amt;
+      }
+      _investTotal = ap - rs + rd;
+    } else {
+      final results = await Future.wait([
+        DB.getMonthStats(_year, _month),
+        DB.getSummaryByCategory(_year, _month),
+        DB.getBalanceBefore(_year, _month),
+        DB.getEvolution(_year, _month),
+        DB.getInvestments(),
+      ]);
+      stats  = results[0] as Map<String, double>;
+      catSum = results[1] as List<Map<String, dynamic>>;
+      _balanceBefore = results[2] as double;
+      evol   = results[3] as List<Map<String, dynamic>>;
+      final invs = results[4] as List<Map<String, dynamic>>;
+      double ap=0, rs=0, rd=0;
+      for (final i in invs) {
+        final amt = (i['amount'] as num).toDouble();
+        if (i['type']=='aporte') ap+=amt;
+        else if (i['type']=='resgate') rs+=amt;
+        else if (i['type']=='rendimento') rd+=amt;
+      }
+      _investTotal = ap - rs + rd;
+    }
+
     _income   = stats['income']!;
     _expense  = stats['expense']!;
     _fixedExp = stats['fixedExp']!;
     _instExp  = stats['instExp']!;
     _varExp   = stats['varExp']!;
-    _catSummary     = results[1] as List<Map<String, dynamic>>;
-    _balanceBefore  = results[2] as double;
-    _evolution      = results[3] as List<Map<String, dynamic>>;
-    final invs = results[4] as List<Map<String, dynamic>>;
-    double ap=0, rs=0, rd=0;
-    for (final i in invs) {
-      final amt = (i['amount'] as num).toDouble();
-      if (i['type']=='aporte') ap+=amt;
-      else if (i['type']=='resgate') rs+=amt;
-      else if (i['type']=='rendimento') rd+=amt;
-    }
-    _investTotal = ap - rs + rd;
+    _catSummary = catSum;
+    _evolution  = evol;
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _showPeriodPicker() async {
+    int sy = _startYear, sm = _startMonth, ey = _endYear, em = _endMonth;
+    final months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) {
+        Widget _picker(String label, int y, int m,
+            void Function(int, int) onChange) {
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: const TextStyle(fontSize: 11, color: kMuted, letterSpacing: 0.8)),
+            const SizedBox(height: 6),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: kBorder),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(children: [
+                // Mês
+                IconButton(
+                  padding: EdgeInsets.zero, constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.chevron_left, size: 20, color: kMuted),
+                  onPressed: () {
+                    int nm = m - 1, ny = y;
+                    if (nm <= 0) { nm = 12; ny--; }
+                    setSt(() {}); onChange(ny, nm);
+                  },
+                ),
+                Expanded(
+                  child: Text('${months[m-1]}/$y',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+                IconButton(
+                  padding: EdgeInsets.zero, constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.chevron_right, size: 20, color: kMuted),
+                  onPressed: () {
+                    int nm = m + 1, ny = y;
+                    if (nm > 12) { nm = 1; ny++; }
+                    setSt(() {}); onChange(ny, nm);
+                  },
+                ),
+              ]),
+            ),
+          ]);
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 36, height: 4, decoration: BoxDecoration(color: kBorder, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 16),
+            const Text('Selecionar período', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 20),
+            _picker('DE', sy, sm, (ny, nm) => setSt(() { sy = ny; sm = nm; })),
+            const SizedBox(height: 14),
+            _picker('ATÉ', ey, em, (ny, nm) => setSt(() { ey = ny; em = nm; })),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: kPurple, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  // garante que De <= Até
+                  if (sy > ey || (sy == ey && sm > em)) {
+                    final tmp = sy; sy = ey; ey = tmp;
+                    final tmpm = sm; sm = em; em = tmpm;
+                  }
+                  setState(() {
+                    _startYear = sy; _startMonth = sm;
+                    _endYear   = ey; _endMonth   = em;
+                    _isPeriod = true;
+                  });
+                  Navigator.pop(ctx);
+                  _loadAll();
+                },
+                child: const Text('Aplicar'),
+              ),
+            ),
+          ]),
+        );
+      }),
+    );
+  }
+
+  String get _periodLabel {
+    final months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return '${months[_startMonth-1]}/$_startYear – ${months[_endMonth-1]}/$_endYear';
   }
 
   @override
@@ -87,9 +217,43 @@ class ReportsScreenState extends State<ReportsScreen>
       title: const Text('Relatórios', style: TextStyle(fontSize: 16)),
       elevation: 0,
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(49),
+        preferredSize: const Size.fromHeight(97),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Divider(height: 1, color: kBorder),
+          // ── Filtro de modo ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: Row(children: [
+              _ModeChip(label: 'Mês', active: !_isPeriod, onTap: () {
+                if (_isPeriod) setState(() => _isPeriod = false);
+                _loadAll();
+              }),
+              const SizedBox(width: 8),
+              _ModeChip(label: 'Período', active: _isPeriod, onTap: _showPeriodPicker),
+              if (_isPeriod) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showPeriodPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: kPurple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: kPurple.withOpacity(0.4)),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Expanded(child: Text(_periodLabel,
+                          style: const TextStyle(fontSize: 12, color: kPurple, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis)),
+                        const Icon(Icons.edit_outlined, size: 13, color: kPurple),
+                      ]),
+                    ),
+                  ),
+                ),
+              ],
+            ]),
+          ),
           TabBar(
             controller: _tab,
             indicatorColor: kPurple,
@@ -111,7 +275,9 @@ class ReportsScreenState extends State<ReportsScreen>
           children: [
             _ResumoTab(
               year: _year, month: _month,
-              onPrev: _prev, onNext: _next,
+              onPrev: _isPeriod ? null : _prev,
+              onNext: _isPeriod ? null : _next,
+              isPeriod: _isPeriod,
               income: _income, expense: _expense,
               fixedExp: _fixedExp, varExp: _varExp, instExp: _instExp,
               balanceBefore: _balanceBefore, investTotal: _investTotal,
@@ -119,13 +285,38 @@ class ReportsScreenState extends State<ReportsScreen>
             ),
             _CategoriasTab(
               year: _year, month: _month,
-              onPrev: _prev, onNext: _next,
+              onPrev: _isPeriod ? null : _prev,
+              onNext: _isPeriod ? null : _next,
+              isPeriod: _isPeriod,
               catSummary: _catSummary,
               income: _income, expense: _expense,
             ),
-            _EvolucaoTab(evolution: _evolution),
+            _EvolucaoTab(evolution: _evolution, isPeriod: _isPeriod),
           ],
         ),
+  );
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ModeChip({required this.label, required this.active, required this.onTap});
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: active ? kPurple : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: active ? kPurple : kBorder),
+      ),
+      child: Text(label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+          color: active ? Colors.white : kMuted)),
+    ),
   );
 }
 
@@ -134,7 +325,8 @@ class ReportsScreenState extends State<ReportsScreen>
 // ─────────────────────────────────────────────────────────────
 class _ResumoTab extends StatelessWidget {
   final int year, month;
-  final VoidCallback onPrev, onNext;
+  final VoidCallback? onPrev, onNext;
+  final bool isPeriod;
   final double income, expense, fixedExp, varExp, instExp;
   final double balanceBefore, investTotal;
   final List<Map<String, dynamic>> catSummary;
@@ -142,6 +334,7 @@ class _ResumoTab extends StatelessWidget {
   const _ResumoTab({
     required this.year, required this.month,
     required this.onPrev, required this.onNext,
+    required this.isPeriod,
     required this.income, required this.expense,
     required this.fixedExp, required this.varExp, required this.instExp,
     required this.balanceBefore, required this.investTotal,
@@ -162,8 +355,9 @@ class _ResumoTab extends StatelessWidget {
       onRefresh: () async {},
       color: kPurple,
       child: ListView(padding: const EdgeInsets.all(14), children: [
-        MonthNav(year: year, month: month, onPrev: onPrev, onNext: onNext),
-        const SizedBox(height: 12),
+        if (!isPeriod)
+          MonthNav(year: year, month: month, onPrev: onPrev!, onNext: onNext!),
+        if (!isPeriod) const SizedBox(height: 12),
 
         // ── Alerta se saldo negativo ──
         if (_saldoMes < 0)
@@ -179,7 +373,7 @@ class _ResumoTab extends StatelessWidget {
               const Icon(Icons.warning_amber_rounded, color: kRed, size: 18),
               const SizedBox(width: 8),
               Expanded(child: Text(
-                'Despesas superaram a receita em ${fmtCurrency(expense - income)} neste mês.',
+                'Despesas superaram a receita em ${fmtCurrency(expense - income)}${isPeriod ? " no período." : " neste mês."}',
                 style: const TextStyle(color: kRed, fontSize: 12),
               )),
             ]),
@@ -316,13 +510,15 @@ class _ResumoTab extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 class _CategoriasTab extends StatefulWidget {
   final int year, month;
-  final VoidCallback onPrev, onNext;
+  final VoidCallback? onPrev, onNext;
+  final bool isPeriod;
   final List<Map<String, dynamic>> catSummary;
   final double income, expense;
 
   const _CategoriasTab({
     required this.year, required this.month,
     required this.onPrev, required this.onNext,
+    required this.isPeriod,
     required this.catSummary, required this.income, required this.expense,
   });
 
@@ -346,8 +542,9 @@ class _CategoriasTabState extends State<_CategoriasTab> {
       Colors.teal, Colors.pink, Colors.amber, Colors.cyan];
 
     return Column(children: [
-      MonthNav(year: widget.year, month: widget.month,
-          onPrev: widget.onPrev, onNext: widget.onNext),
+      if (!widget.isPeriod)
+        MonthNav(year: widget.year, month: widget.month,
+            onPrev: widget.onPrev!, onNext: widget.onNext!),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(children: [
@@ -464,7 +661,8 @@ class _CategoriasTabState extends State<_CategoriasTab> {
 // ─────────────────────────────────────────────────────────────
 class _EvolucaoTab extends StatelessWidget {
   final List<Map<String, dynamic>> evolution;
-  const _EvolucaoTab({required this.evolution});
+  final bool isPeriod;
+  const _EvolucaoTab({required this.evolution, this.isPeriod = false});
 
   static const _monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun',
                                'Jul','Ago','Set','Out','Nov','Dez'];

@@ -812,6 +812,116 @@ class DB {
     }).toList();
   }
 
+  /// Estatísticas agregadas para um período (De startY/startM até endY/endM, inclusive).
+  static Future<Map<String, double>> getStatsForPeriod(
+      int startYear, int startMonth, int endYear, int endMonth) async {
+    final start = '${startYear.toString().padLeft(4,'0')}-${startMonth.toString().padLeft(2,'0')}-01';
+    final eM = endMonth == 12 ? 1 : endMonth + 1;
+    final eY = endMonth == 12 ? endYear + 1 : endYear;
+    final end = '${eY.toString().padLeft(4,'0')}-${eM.toString().padLeft(2,'0')}-01';
+    final data = await _sb
+        .from('transactions')
+        .select('type, amount, is_fixed, installment_id')
+        .eq('user_id', uid)
+        .gte('date', start)
+        .lt('date', end);
+    double income = 0, expense = 0, fixedExp = 0, instExp = 0, varExp = 0;
+    for (final r in data as List) {
+      final amount = (r['amount'] as num).toDouble();
+      final isFixed = r['is_fixed'] as bool? ?? false;
+      final hasInst = r['installment_id'] != null;
+      if (r['type'] == 'income') {
+        income += amount;
+      } else {
+        expense += amount;
+        if (isFixed) fixedExp += amount;
+        else if (hasInst) instExp += amount;
+        else varExp += amount;
+      }
+    }
+    return {'income': income, 'expense': expense, 'fixedExp': fixedExp, 'instExp': instExp, 'varExp': varExp};
+  }
+
+  /// Sumário por categoria para um período.
+  static Future<List<Map<String, dynamic>>> getSummaryByCategoryForPeriod(
+      int startYear, int startMonth, int endYear, int endMonth) async {
+    final start = '${startYear.toString().padLeft(4,'0')}-${startMonth.toString().padLeft(2,'0')}-01';
+    final eM = endMonth == 12 ? 1 : endMonth + 1;
+    final eY = endMonth == 12 ? endYear + 1 : endYear;
+    final end = '${eY.toString().padLeft(4,'0')}-${eM.toString().padLeft(2,'0')}-01';
+    final data = await _sb
+        .from('transactions')
+        .select('type, amount, category_id, categories(name, icon)')
+        .eq('user_id', uid)
+        .gte('date', start)
+        .lt('date', end);
+    final Map<String, Map<String, dynamic>> groups = {};
+    for (final r in data as List) {
+      final catId = r['category_id'] as String?;
+      final type = r['type'] as String;
+      final key = '${catId ?? "none"}_$type';
+      if (!groups.containsKey(key)) {
+        final cat = r['categories'] as Map?;
+        groups[key] = {
+          'name': cat?['name'] ?? 'Sem categoria',
+          'icon': cat?['icon'] ?? 'more_horiz',
+          'type': type,
+          'total': 0.0,
+        };
+      }
+      groups[key]!['total'] = (groups[key]!['total'] as double) + (r['amount'] as num).toDouble();
+    }
+    return groups.values.toList()
+      ..sort((a, b) => (b['total'] as double).compareTo(a['total'] as double));
+  }
+
+  /// Evolução mês a mês para um período explícito.
+  static Future<List<Map<String, dynamic>>> getEvolutionForPeriod(
+      int startYear, int startMonth, int endYear, int endMonth) async {
+    final start = '${startYear.toString().padLeft(4,'0')}-${startMonth.toString().padLeft(2,'0')}-01';
+    final eM = endMonth == 12 ? 1 : endMonth + 1;
+    final eY = endMonth == 12 ? endYear + 1 : endYear;
+    final end = '${eY.toString().padLeft(4,'0')}-${eM.toString().padLeft(2,'0')}-01';
+    final data = await _sb
+        .from('transactions')
+        .select('type, amount, date, is_fixed, installment_id')
+        .eq('user_id', uid)
+        .gte('date', start)
+        .lt('date', end);
+    final Map<String, Map<String, double>> byMonth = {};
+    int m = startMonth, y = startYear;
+    while (y < endYear || (y == endYear && m <= endMonth)) {
+      final key = '${y.toString().padLeft(4,'0')}-${m.toString().padLeft(2,'0')}';
+      byMonth[key] = {'income': 0, 'expense': 0, 'fixedExp': 0, 'instExp': 0, 'varExp': 0};
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    for (final r in data as List) {
+      final key = (r['date'] as String).substring(0, 7);
+      if (!byMonth.containsKey(key)) continue;
+      final amount = (r['amount'] as num).toDouble();
+      final isFixed = r['is_fixed'] as bool? ?? false;
+      final hasInst = r['installment_id'] != null;
+      if (r['type'] == 'income') {
+        byMonth[key]!['income'] = byMonth[key]!['income']! + amount;
+      } else {
+        byMonth[key]!['expense'] = byMonth[key]!['expense']! + amount;
+        if (isFixed) byMonth[key]!['fixedExp'] = byMonth[key]!['fixedExp']! + amount;
+        else if (hasInst) byMonth[key]!['instExp'] = byMonth[key]!['instExp']! + amount;
+        else byMonth[key]!['varExp'] = byMonth[key]!['varExp']! + amount;
+      }
+    }
+    final sorted = byMonth.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return sorted.map((e) {
+      final parts = e.key.split('-');
+      return <String, dynamic>{
+        'year': int.parse(parts[0]),
+        'month': int.parse(parts[1]),
+        'key': e.key,
+        ...e.value,
+      };
+    }).toList();
+  }
+
   // ── Session validation ────────────────────────────────────
 
   static Future<bool> isSessionValid() async {
