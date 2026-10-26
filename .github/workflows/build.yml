@@ -159,10 +159,12 @@ jobs:
           rm -f test/widget_test.dart
           flutter pub get
 
-      - name: Configurar PWA manifest (standalone para iOS)
+      - name: Configurar PWA manifest e index.html para iOS
         run: |
           python3 << 'PYEOF'
-          import json, os
+          import json, os, re
+
+          # ── manifest.json ──────────────────────────────────
           manifest_path = 'web/manifest.json'
           if os.path.exists(manifest_path):
               with open(manifest_path) as f:
@@ -171,12 +173,37 @@ jobs:
               m['name'] = 'Finanças Pessoais'
               m['short_name'] = 'Finanças'
               m['background_color'] = '#0F1117'
-              m['theme_color'] = '#6366F1'
+              m['theme_color'] = '#0F1117'
               with open(manifest_path, 'w') as f:
                   json.dump(m, f, indent=2, ensure_ascii=False)
-              print('manifest.json atualizado:', m.get('display'))
-          else:
-              print('manifest.json não encontrado, pulando')
+              print('manifest.json atualizado')
+
+          # ── index.html — meta tags iOS ──────────────────────
+          index_path = 'web/index.html'
+          if os.path.exists(index_path):
+              html = open(index_path).read()
+
+              # viewport-fit=cover para conteúdo chegar até o notch
+              html = re.sub(
+                  r'(<meta\s+name="viewport"[^>]*content=")([^"]*?)(")',
+                  lambda m: m.group(1) + m.group(2).rstrip(', ') + ', viewport-fit=cover' + m.group(3)
+                  if 'viewport-fit' not in m.group(2) else m.group(0),
+                  html
+              )
+
+              # Meta tags iOS PWA — inserir antes de </head>
+              ios_tags = '''
+    <!-- iOS PWA: status bar transparente (fundo escuro aparece por baixo) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Finanças">
+    <meta name="theme-color" content="#0F1117">'''
+
+              if 'apple-mobile-web-app-capable' not in html:
+                  html = html.replace('</head>', ios_tags + '\n  </head>')
+
+              open(index_path, 'w').write(html)
+              print('index.html atualizado com meta tags iOS')
           PYEOF
 
       - name: Build Web
