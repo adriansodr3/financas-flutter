@@ -179,7 +179,7 @@ class _ResumoTab extends StatelessWidget {
               const Icon(Icons.warning_amber_rounded, color: kRed, size: 18),
               const SizedBox(width: 8),
               Expanded(child: Text(
-                'Despesas superaram a receita em ${fmtCurrency(_expense - income)} neste mês.',
+                'Despesas superaram a receita em ${fmtCurrency(expense - income)} neste mês.',
                 style: const TextStyle(color: kRed, fontSize: 12),
               )),
             ]),
@@ -502,8 +502,7 @@ class _EvolucaoTab extends StatelessWidget {
                     final label = ri == 0 ? 'Receita' : 'Despesa';
                     final color = ri == 0 ? kGreen : kRed;
                     return BarTooltipItem(
-                      '$label
-${fmtCurrency(rod.toY)}',
+                      '$label\n${fmtCurrency(rod.toY)}',
                       TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
                     );
                   },
