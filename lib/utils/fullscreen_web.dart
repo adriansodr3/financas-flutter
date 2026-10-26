@@ -9,7 +9,7 @@ bool get isFullscreenSupported {
   final isIos = ua.contains('iphone') ||
       ua.contains('ipad') ||
       ua.contains('ipod') ||
-      (ua.contains('mac') && html.window.navigator.maxTouchPoints > 0);
+      (ua.contains('mac') && (html.window.navigator.maxTouchPoints ?? 0) > 0);
   if (isIos) return false;
   // Verifica se a API existe no document
   return html.document.documentElement?.requestFullscreen != null;
