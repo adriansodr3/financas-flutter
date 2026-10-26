@@ -592,7 +592,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       )),
     ]),
   );
-}
+  }
 
   Future<void> _resetData() async {
     // Primeira confirmação
@@ -694,3 +694,4 @@ class ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
   }
+}
