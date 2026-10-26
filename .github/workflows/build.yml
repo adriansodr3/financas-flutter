@@ -192,12 +192,13 @@ jobs:
               )
 
               # Meta tags iOS PWA — inserir antes de </head>
-              ios_tags = '''
-    <!-- iOS PWA: status bar transparente (fundo escuro aparece por baixo) -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Finanças">
-    <meta name="theme-color" content="#0F1117">'''
+              ios_tags = (
+                  '\n    <!-- iOS PWA: status bar transparente -->'
+                  '\n    <meta name="apple-mobile-web-app-capable" content="yes">'
+                  '\n    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
+                  '\n    <meta name="apple-mobile-web-app-title" content="Finanças">'
+                  '\n    <meta name="theme-color" content="#0F1117">'
+              )
 
               if 'apple-mobile-web-app-capable' not in html:
                   html = html.replace('</head>', ios_tags + '\n  </head>')
