@@ -378,6 +378,7 @@ class DB {
     required String startDate,
     String? categoryId,
   }) async {
+    // instAmt = valor exato por parcela (totalAmount já vem como instValor * n)
     final instAmt = double.parse((totalAmount / nParcelas).toStringAsFixed(2));
 
     final inst = await _sb.from('installments').insert({

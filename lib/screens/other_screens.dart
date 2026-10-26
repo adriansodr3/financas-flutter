@@ -234,7 +234,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
     List<Category> cats = await DB.getCategories(type: 'expense');
     Category? selCat = cats.isNotEmpty ? cats.first : null;
     final descCtrl  = TextEditingController();
-    final totalCtrl = TextEditingController();
+    final instCtrl  = TextEditingController();
     final parcCtrl  = TextEditingController();
     final _now = DateTime.now();
     final dateCtrl  = TextEditingController(text: '${_now.year}-${_now.month.toString().padLeft(2,"0")}-${_now.day.toString().padLeft(2,"0")}');
@@ -251,9 +251,9 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
             TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao (ex: Notebook)')),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: TextField(controller: totalCtrl,
+              Expanded(child: TextField(controller: instCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Valor total', prefixText: 'R\$ '))),
+                decoration: const InputDecoration(labelText: 'Valor da parcela', prefixText: 'R\$ '))),
               const SizedBox(width: 12),
               Expanded(child: TextField(controller: parcCtrl,
                 keyboardType: TextInputType.number,
@@ -293,12 +293,12 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: ElevatedButton(
               onPressed: () async {
-                final total = double.tryParse(totalCtrl.text.replaceAll(',','.'));
-                final n     = int.tryParse(parcCtrl.text);
-                if (total==null || n==null || n<1 || descCtrl.text.trim().isEmpty) return;
+                final inst = double.tryParse(instCtrl.text.replaceAll(',','.'));
+                final n    = int.tryParse(parcCtrl.text);
+                if (inst==null || n==null || n<1 || descCtrl.text.trim().isEmpty) return;
                 await DB.createInstallment(
                   description: descCtrl.text.trim(),
-                  totalAmount: total, nParcelas: n,
+                  totalAmount: inst * n, nParcelas: n,
                   startDate: dateCtrl.text.trim(),
                   categoryId: selCat?.id,
                 );
