@@ -188,7 +188,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                   builder: (c, child) => Theme(
                     data: Theme.of(c).copyWith(colorScheme: const ColorScheme.dark(primary: kPurple, surface: kSurface)),
                     child: child!));
-                if (picked != null) setSt(() => dateStr = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-01');
+                if (picked != null) setSt(() => dateStr = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-${picked.day.toString().padLeft(2, "0")}');
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -236,7 +236,8 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
     final descCtrl  = TextEditingController();
     final totalCtrl = TextEditingController();
     final parcCtrl  = TextEditingController();
-    final dateCtrl  = TextEditingController(text: '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2,"0")}-01');
+    final _now = DateTime.now();
+    final dateCtrl  = TextEditingController(text: '${_now.year}-${_now.month.toString().padLeft(2,"0")}-${_now.day.toString().padLeft(2,"0")}');
 
     final ok = await showModalBottomSheet<bool>(
       context: context, isScrollControlled: true,
@@ -274,7 +275,7 @@ class InstallmentsScreenState extends State<InstallmentsScreen> {
                     child: child!),
                 );
                 if (picked != null) {
-                  dateCtrl.text = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-01';
+                  dateCtrl.text = '${picked.year}-${picked.month.toString().padLeft(2, "0")}-${picked.day.toString().padLeft(2, "0")}';
                 }
               },
               decoration: const InputDecoration(

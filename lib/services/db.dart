@@ -392,10 +392,14 @@ class DB {
 
     final instId = inst['id'] as String;
     var dt = DateTime.parse(startDate.length == 7 ? '$startDate-01' : startDate);
+    final day = dt.day; // preserva o dia original (ex: 10)
 
     for (int i = 0; i < nParcelas; i++) {
+      // usa o dia original em cada parcela, respeitando o último dia do mês
+      final lastDay = DateTime(dt.year, dt.month + 1, 0).day;
+      final d = day > lastDay ? lastDay : day;
       final dateStr =
-          '${dt.year}-${dt.month.toString().padLeft(2,'0')}-01';
+          '${dt.year}-${dt.month.toString().padLeft(2,'0')}-${d.toString().padLeft(2,'0')}';
       await _sb.from('transactions').insert({
         'user_id': uid,
         'category_id': categoryId,
