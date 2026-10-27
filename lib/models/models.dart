@@ -122,6 +122,8 @@ class FixedExpense {
   final String validFrom;
   final String? categoryName;
   final String? categoryIcon;
+  /// Dia do mês em que a conta vence (1–31). Null = sem alerta configurado.
+  final int? dueDay;
 
   const FixedExpense({
     required this.id,
@@ -134,6 +136,7 @@ class FixedExpense {
     required this.validFrom,
     this.categoryName,
     this.categoryIcon,
+    this.dueDay,
   });
 
   factory FixedExpense.fromMap(Map<String, dynamic> m) => FixedExpense(
@@ -151,7 +154,16 @@ class FixedExpense {
         categoryIcon: m['categories'] != null
             ? (m['categories'] as Map)['icon'] as String?
             : null,
+        dueDay: m['due_day'] as int?,
       );
+
+  /// Dias até o vencimento no mês atual (negativo = já venceu).
+  int? get daysUntilDue {
+    if (dueDay == null) return null;
+    final today = DateTime.now();
+    final due = DateTime(today.year, today.month, dueDay!);
+    return due.difference(DateTime(today.year, today.month, today.day)).inDays;
+  }
 }
 
 // ── Installment ───────────────────────────────────────────

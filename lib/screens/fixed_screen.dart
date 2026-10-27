@@ -45,8 +45,9 @@ class FixedScreenState extends State<FixedScreen> {
   }
 
   Future<void> _editFixed(FixedExpense f) async {
-    final descCtrl = TextEditingController(text: f.description);
-    final amtCtrl  = TextEditingController(text: f.amount.toStringAsFixed(2));
+    final descCtrl  = TextEditingController(text: f.description);
+    final amtCtrl   = TextEditingController(text: f.amount.toStringAsFixed(2));
+    final dueDayCtrl= TextEditingController(text: f.dueDay?.toString() ?? '');
     Category? selCat;
 
     await showModalBottomSheet(
@@ -61,8 +62,19 @@ class FixedScreenState extends State<FixedScreen> {
           const SizedBox(height: 16),
           TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao')),
           const SizedBox(height: 12),
-          TextField(controller: amtCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Novo valor', prefixText: 'R\$ ')),
+          Row(children: [
+            Expanded(child: TextField(controller: amtCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Novo valor', prefixText: 'R\$ '))),
+            const SizedBox(width: 12),
+            SizedBox(width: 110, child: TextField(controller: dueDayCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Vence dia',
+                hintText: '1–31',
+                prefixIcon: Icon(Icons.notifications_outlined, size: 18),
+              ))),
+          ]),
           const SizedBox(height: 16),
           CategorySelector(type: f.type, onChanged: (c) => selCat = c),
           const SizedBox(height: 20),
@@ -70,12 +82,15 @@ class FixedScreenState extends State<FixedScreen> {
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text.replaceAll(',','.'));
               if (amt == null || descCtrl.text.trim().isEmpty) return;
+              final dd = int.tryParse(dueDayCtrl.text.trim());
               await DB.editFixedForward(
                 fixedId: f.id,
                 amount: amt,
                 description: descCtrl.text.trim(),
                 categoryId: selCat?.id ?? f.categoryId,
-                fromYear: _year, fromMonth: _month);
+                fromYear: _year, fromMonth: _month,
+                dueDay: (dd != null && dd >= 1 && dd <= 31) ? dd : null,
+              );
               Navigator.pop(ctx); load();
             },
             child: const Text('Salvar'),
@@ -86,8 +101,9 @@ class FixedScreenState extends State<FixedScreen> {
   Future<void> _addFixed() async {
     String selType = 'expense';
     Category? selCat;
-    final descCtrl = TextEditingController();
-    final amtCtrl  = TextEditingController();
+    final descCtrl    = TextEditingController();
+    final amtCtrl     = TextEditingController();
+    final dueDayCtrl  = TextEditingController();
     String dateStr = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2,'0')}-01';
 
     await showModalBottomSheet(
@@ -115,8 +131,19 @@ class FixedScreenState extends State<FixedScreen> {
           const SizedBox(height: 12),
           TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Descricao (ex: Aluguel)')),
           const SizedBox(height: 12),
-          TextField(controller: amtCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Valor mensal', prefixText: 'R\$ ')),
+          Row(children: [
+            Expanded(child: TextField(controller: amtCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Valor mensal', prefixText: 'R\$ '))),
+            const SizedBox(width: 12),
+            SizedBox(width: 110, child: TextField(controller: dueDayCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Vence dia',
+                hintText: '1–31',
+                prefixIcon: Icon(Icons.notifications_outlined, size: 18),
+              ))),
+          ]),
           const SizedBox(height: 12),
           // Data início
           GestureDetector(
@@ -144,7 +171,14 @@ class FixedScreenState extends State<FixedScreen> {
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text.replaceAll(',','.'));
               if (amt == null || descCtrl.text.trim().isEmpty) return;
-              await DB.createFixed(type: selType, amount: amt, description: descCtrl.text.trim(), categoryId: selCat?.id, validFrom: dateStr);
+              final dd = int.tryParse(dueDayCtrl.text.trim());
+              await DB.createFixed(
+                type: selType, amount: amt,
+                description: descCtrl.text.trim(),
+                categoryId: selCat?.id,
+                validFrom: dateStr,
+                dueDay: (dd != null && dd >= 1 && dd <= 31) ? dd : null,
+              );
               Navigator.pop(ctx); load();
             },
             child: const Text('Salvar'),
@@ -193,22 +227,60 @@ class FixedScreenState extends State<FixedScreen> {
                   final f = _filtered[i];
                   final isInc = f.type=='income';
                   final color = isInc ? kGreen : kRed;
-                  return Card(margin: const EdgeInsets.symmetric(vertical: 3), child: ListTile(
-                    leading: Container(width: 40, height: 40,
-                      decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
-                      child: Icon(isInc ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 18)),
-                    title: Text(f.description, style: const TextStyle(fontSize: 14)),
-                    subtitle: Text('${f.categoryName ?? "—"}  •  ${fmtCurrency(f.amount)}/mes', style: const TextStyle(fontSize: 12, color: kMuted)),
-                    trailing: PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert, color: kMuted),
-                      color: kSurface,
-                      onSelected: (v) { if(v=='edit') _editFixed(f); else _deactivateForward(f); },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, color: kPurple, size: 18), SizedBox(width: 8), Text('Editar', style: TextStyle())])),
-                        const PopupMenuItem(value: 'del',  child: Row(children: [Icon(Icons.delete_outline, color: kRed, size: 18), SizedBox(width: 8), Text('Desativar', style: TextStyle(color: kRed))])),
-                      ],
-                    ),
-                  ));
+                  final days = f.daysUntilDue;
+                  final dueBadgeColor = days == null ? null
+                      : days < 0  ? kRed
+                      : days <= 3 ? kRed
+                      : days <= 7 ? kOrange
+                      : kGreen;
+                  final dueBadgeText = days == null ? null
+                      : days < 0  ? 'Venceu há ${(-days)} dia${(-days)==1?"":"s"}'
+                      : days == 0 ? 'Vence hoje!'
+                      : days == 1 ? 'Vence amanhã'
+                      : 'Vence em $days dias';
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    shape: dueBadgeColor != null && dueBadgeColor != kGreen
+                      ? RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: dueBadgeColor.withOpacity(0.5), width: 1.5))
+                      : null,
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      ListTile(
+                        leading: Container(width: 40, height: 40,
+                          decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+                          child: Icon(isInc ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 18)),
+                        title: Text(f.description, style: const TextStyle(fontSize: 14)),
+                        subtitle: Text(
+                          '${f.categoryName ?? "—"}  •  ${fmtCurrency(f.amount)}/mes'
+                          '${f.dueDay != null ? "  •  dia ${f.dueDay}" : ""}',
+                          style: const TextStyle(fontSize: 12, color: kMuted)),
+                        trailing: PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, color: kMuted),
+                          color: kSurface,
+                          onSelected: (v) { if(v=='edit') _editFixed(f); else _deactivateForward(f); },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, color: kPurple, size: 18), SizedBox(width: 8), Text('Editar', style: TextStyle())])),
+                            const PopupMenuItem(value: 'del',  child: Row(children: [Icon(Icons.delete_outline, color: kRed, size: 18), SizedBox(width: 8), Text('Desativar', style: TextStyle(color: kRed))])),
+                          ],
+                        ),
+                      ),
+                      if (dueBadgeText != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                          child: Row(children: [
+                            Icon(dueBadgeColor == kGreen
+                                ? Icons.check_circle_outline
+                                : Icons.alarm_outlined,
+                              color: dueBadgeColor, size: 14),
+                            const SizedBox(width: 5),
+                            Text(dueBadgeText,
+                              style: TextStyle(fontSize: 11, color: dueBadgeColor, fontWeight: FontWeight.w600)),
+                          ]),
+                        ),
+                    ]),
+                  );
                 },
               )),
         ),

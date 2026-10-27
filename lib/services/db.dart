@@ -251,6 +251,7 @@ class DB {
     required String description,
     String? categoryId,
     String? validFrom,
+    int? dueDay,
   }) async {
     final now = DateTime.now();
     final vf = validFrom ?? '${now.year}-${now.month.toString().padLeft(2, "0")}-01';
@@ -261,6 +262,7 @@ class DB {
       'amount': amount,
       'description': description,
       'valid_from': vf,
+      if (dueDay != null) 'due_day': dueDay,
     });
   }
 
@@ -609,6 +611,7 @@ class DB {
     String? categoryId,
     required int fromYear,
     required int fromMonth,
+    int? dueDay,
   }) async {
     // Desativar o fixo atual
     await _sb.from('fixed_expenses')
@@ -623,6 +626,7 @@ class DB {
       'amount': amount,
       'description': description,
       'valid_from': validFrom,
+      if (dueDay != null) 'due_day': dueDay,
     });
     // Deletar instâncias futuras do fixo antigo (mês atual em diante)
     await _sb.from('transactions').delete()
