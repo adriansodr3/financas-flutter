@@ -34,5 +34,47 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+  window.subscribeToPush = function(vapidPublicKey, onSuccess, onError) {
+    function urlB64ToUint8Array(b) {
+      var pad = "=".repeat((4 - b.length % 4) % 4);
+      var raw = atob((b + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      var arr = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      return arr;
+    }
+    if (!("Notification" in window) || !navigator.serviceWorker) {
+      return onError("nao suportado");
+    }
+    Notification.requestPermission().then(function(perm) {
+      if (perm !== "granted") return onError("permissao negada");
+      navigator.serviceWorker.ready.then(function(reg) {
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
+        }).then(function(sub) {
+          var k = sub.getKey("p256dh");
+          var a = sub.getKey("auth");
+          function b64(buf) {
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
+              .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+          }
+          onSuccess({ endpoint: sub.endpoint, p256dh: b64(k), auth: b64(a) });
+        }).catch(function(e) { onError(String(e)); });
+      });
+    });
+  };
+  window.unsubscribeFromPush = function(onDone) {
+    if (!navigator.serviceWorker) return onDone(null);
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.pushManager.getSubscription().then(function(sub) {
+        if (!sub) return onDone(null);
+        var ep = sub.endpoint;
+        sub.unsubscribe().then(function() { onDone(ep); }).catch(function() { onDone(null); });
+      });
+    });
+  };
+  </script>
 </body>
 </html>

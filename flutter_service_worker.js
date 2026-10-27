@@ -17,16 +17,16 @@ const RESOURCES = {"canvaskit/skwasm.js.symbols": "c3c05bd50bdf59da8626bbe446ce6
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
-"main.dart.js": "e1f04c5d0b8ce32286028ff79da95fa3",
+"main.dart.js": "ff904b8b7c704d1bd035e2190733599a",
 "assets/AssetManifest.json": "99914b932bd37a50b983c5e7c90ae93b",
 "assets/AssetManifest.bin.json": "a1fee2517bf598633e2f67fcf3e26c94",
 "assets/FontManifest.json": "7b2a36307916a9721811788013e65289",
-"assets/fonts/MaterialIcons-Regular.otf": "85f8c7139da82bb614383a6fee921734",
+"assets/fonts/MaterialIcons-Regular.otf": "60033c540046f995189ba68786d1bba2",
 "assets/NOTICES": "f3564e24c999313a0667d7d93f62c138",
 "assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8cb9b6ce",
 "assets/AssetManifest.bin": "0b0a3415aad49b6e9bf965ff578614f9",
 "version.json": "632b95e539fdac973c1693b433be4fa7",
-"flutter_bootstrap.js": "5ccfc1a8e0136f5490f684857ebecad7",
+"flutter_bootstrap.js": "060e54668b68851b45bd332054c6751a",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "index.html": "5491da5493feb2169cb8ca6ef5208055",
 "/": "5491da5493feb2169cb8ca6ef5208055",
@@ -202,3 +202,30 @@ function onlineFirst(event) {
     })
   );
 }
+
+
+// ── Web Push handlers (injetado pelo CI) ──
+self.addEventListener("push", function(event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch(e) {}
+  var title = data.title || "Financas Pessoais";
+  var opts = {
+    body: data.body || "",
+    icon: "/financas-flutter/icons/Icon-192.png",
+    badge: "/financas-flutter/icons/Icon-192.png",
+    tag: data.tag || "financas-alert",
+    renotify: true,
+    vibrate: [200, 100, 200],
+  };
+  event.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener("notificationclick", function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(cs) {
+      for (var c of cs) { if (c.url.includes("/financas-flutter/") && "focus" in c) return c.focus(); }
+      if (clients.openWindow) return clients.openWindow("/financas-flutter/");
+    })
+  );
+});
