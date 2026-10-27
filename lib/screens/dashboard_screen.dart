@@ -84,7 +84,7 @@ class _CategoryChart extends StatelessWidget {
                               decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                           const SizedBox(width: 6),
                           Expanded(child: Text(
-                            c['category_name'] as String? ?? '—',
+                            c['name'] as String? ?? '—',
                             style: const TextStyle(fontSize: 11),
                             overflow: TextOverflow.ellipsis,
                           )),
