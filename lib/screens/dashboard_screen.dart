@@ -18,24 +18,113 @@ const _kChartColors = [
   Color(0xFF06B6D4), // cyan
 ];
 
-class _CategoryChart extends StatelessWidget {
+class _CategoryChart extends StatefulWidget {
   final List<Map<String, dynamic>> catSummary;
+  final List<Transaction> txs;
   final double total;
 
-  const _CategoryChart({required this.catSummary, required this.total});
+  const _CategoryChart({
+    required this.catSummary,
+    required this.txs,
+    required this.total,
+  });
+
+  @override
+  State<_CategoryChart> createState() => _CategoryChartState();
+}
+
+class _CategoryChartState extends State<_CategoryChart> {
+  int _touched = -1;
+
+  void _onSectionTap(int index) {
+    if (index < 0 || index >= widget.catSummary.length) return;
+    final cat = widget.catSummary[index];
+    final catName = cat['name'] as String? ?? 'Sem categoria';
+    final color = _kChartColors[index % _kChartColors.length];
+    final catTxs = widget.txs
+        .where((t) => t.type == 'expense' && (t.categoryName ?? 'Sem categoria') == catName)
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    final total = (cat['total'] as num?)?.toDouble() ?? 0.0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.55,
+        maxChildSize: 0.92,
+        minChildSize: 0.3,
+        builder: (_, ctrl) => Column(children: [
+          // Handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: kBorder, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+            child: Row(children: [
+              Container(width: 12, height: 12,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(catName,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(fmtCurrency(total),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kRed)),
+                Text('${catTxs.length} lançamento${catTxs.length == 1 ? "" : "s"}',
+                  style: const TextStyle(fontSize: 11, color: kMuted)),
+              ]),
+            ]),
+          ),
+          Divider(height: 1, color: kBorder),
+          // Lista
+          Expanded(
+            child: catTxs.isEmpty
+              ? const Center(child: Text('Nenhum lançamento', style: TextStyle(color: kMuted)))
+              : ListView.separated(
+                  controller: ctrl,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: catTxs.length,
+                  separatorBuilder: (_, __) => Divider(height: 1, color: kBorder, indent: 16, endIndent: 16),
+                  itemBuilder: (_, i) {
+                    final t = catTxs[i];
+                    return ListTile(
+                      dense: true,
+                      title: Text(t.description ?? '—', style: const TextStyle(fontSize: 13)),
+                      subtitle: Text(fmtDate(t.date), style: const TextStyle(fontSize: 11, color: kMuted)),
+                      trailing: Text(fmtCurrency(t.amount),
+                        style: const TextStyle(fontSize: 13, color: kRed, fontWeight: FontWeight.w600)),
+                    );
+                  },
+                ),
+          ),
+        ]),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (catSummary.isEmpty || total <= 0) return const SizedBox.shrink();
+    if (widget.catSummary.isEmpty || widget.total <= 0) return const SizedBox.shrink();
 
     final sections = <PieChartSectionData>[];
-    for (int i = 0; i < catSummary.length; i++) {
-      final c = catSummary[i];
+    for (int i = 0; i < widget.catSummary.length; i++) {
+      final c = widget.catSummary[i];
       final amt = (c['total'] as num?)?.toDouble() ?? 0.0;
+      final isTouched = i == _touched;
       sections.add(PieChartSectionData(
         value: amt,
         color: _kChartColors[i % _kChartColors.length],
-        radius: 28,
+        radius: isTouched ? 36 : 28,
         title: '',
         showTitle: false,
       ));
@@ -51,19 +140,35 @@ class _CategoryChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('GASTOS POR CATEGORIA',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: kMuted, letterSpacing: 0.8)),
+          Row(children: [
+            const Text('GASTOS POR CATEGORIA',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: kMuted, letterSpacing: 0.8)),
+            const Spacer(),
+            const Text('toque para detalhar',
+                style: TextStyle(fontSize: 10, color: kMuted)),
+            const SizedBox(width: 4),
+            const Icon(Icons.touch_app_outlined, size: 13, color: kMuted),
+          ]),
           const SizedBox(height: 12),
           Row(
             children: [
               SizedBox(
-                height: 100,
-                width: 100,
+                height: 110,
+                width: 110,
                 child: PieChart(PieChartData(
                   sections: sections,
                   centerSpaceRadius: 24,
                   sectionsSpace: 2,
                   borderData: FlBorderData(show: false),
+                  pieTouchData: PieTouchData(
+                    touchCallback: (event, response) {
+                      if (event is FlTapUpEvent) {
+                        final idx = response?.touchedSection?.touchedSectionIndex ?? -1;
+                        setState(() => _touched = idx);
+                        if (idx >= 0) _onSectionTap(idx);
+                      }
+                    },
+                  ),
                 )),
               ),
               const SizedBox(width: 16),
@@ -71,26 +176,44 @@ class _CategoryChart extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: List.generate(
-                    catSummary.length > 5 ? 5 : catSummary.length,
+                    widget.catSummary.length > 5 ? 5 : widget.catSummary.length,
                     (i) {
-                      final c = catSummary[i];
+                      final c = widget.catSummary[i];
                       final amt = (c['total'] as num?)?.toDouble() ?? 0.0;
-                      final pct = total > 0 ? (amt / total * 100) : 0.0;
+                      final pct = widget.total > 0 ? (amt / widget.total * 100) : 0.0;
                       final color = _kChartColors[i % _kChartColors.length];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(children: [
-                          Container(width: 8, height: 8,
-                              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(
-                            c['name'] as String? ?? '—',
-                            style: const TextStyle(fontSize: 11),
-                            overflow: TextOverflow.ellipsis,
-                          )),
-                          Text('${pct.toStringAsFixed(0)}%',
-                              style: const TextStyle(fontSize: 11, color: kMuted)),
-                        ]),
+                      final isSelected = i == _touched;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() => _touched = i);
+                          _onSectionTap(i);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color.withOpacity(0.12) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(children: [
+                            Container(width: 8, height: 8,
+                                decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text(
+                              c['name'] as String? ?? '—',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            )),
+                            Text('${pct.toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isSelected ? color : kMuted,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                                )),
+                          ]),
+                        ),
                       );
                     },
                   ),
@@ -275,6 +398,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                               catSummary: _catSummary
                                 .where((c) => c['type'] == 'expense')
                                 .toList(),
+                              txs: _txs,
                               total: _expense,
                             ),
                           if (_catSummary.any((c) => c['type'] == 'expense'))
