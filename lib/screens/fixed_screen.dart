@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/db.dart';
+import '../services/push_service.dart';
 import '../theme.dart';
 import '../widgets/widgets.dart';
 import '../widgets/category_picker.dart';
@@ -16,6 +18,8 @@ class FixedScreenState extends State<FixedScreen> {
   List<FixedExpense> _all = [];
   String? _filterCat; // null = todos
   bool _loading = true;
+  bool _notifEnabled = false;
+  bool _notifLoading = false;
   int _year = DateTime.now().year, _month = DateTime.now().month;
 
   List<FixedExpense> get _filtered =>
@@ -25,7 +29,50 @@ class FixedScreenState extends State<FixedScreen> {
       _all.map((f) => f.categoryName ?? '—').toSet().toList()..sort();
 
   @override
-  void initState() { super.initState(); load(); }
+  void initState() {
+    super.initState();
+    load();
+    if (kIsWeb) _checkNotifStatus();
+  }
+
+  Future<void> _checkNotifStatus() async {
+    if (!PushService.isSupported) return;
+    final has = await DB.hasPushSubscription();
+    if (mounted) setState(() => _notifEnabled = has);
+  }
+
+  Future<void> _toggleNotifications() async {
+    if (_notifLoading) return;
+    setState(() => _notifLoading = true);
+    try {
+      if (_notifEnabled) {
+        // Desativar
+        final endpoint = await PushService.unsubscribe();
+        if (endpoint != null) await DB.deletePushSubscription(endpoint);
+        if (mounted) setState(() => _notifEnabled = false);
+      } else {
+        // Ativar
+        final sub = await PushService.subscribe();
+        if (sub != null) {
+          await DB.savePushSubscription(
+            endpoint: sub['endpoint']!,
+            p256dh: sub['p256dh']!,
+            auth: sub['auth']!,
+          );
+          if (mounted) setState(() => _notifEnabled = true);
+        } else if (PushService.permissionState == 'denied') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Permissão de notificação bloqueada. Habilite nas configurações do navegador.'),
+              duration: Duration(seconds: 4),
+            ));
+          }
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _notifLoading = false);
+    }
+  }
 
   Future<void> load() async {
     setState(() => _loading = true);
@@ -193,6 +240,21 @@ class FixedScreenState extends State<FixedScreen> {
             appBar: AppBar(elevation: 0,
         title: const Text('Gastos e Receitas Fixos', style: TextStyle(fontSize: 16)),
         actions: [
+          // Toggle de notificações de vencimento
+          if (kIsWeb && PushService.isSupported)
+            _notifLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14),
+                  child: SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(color: kMuted, strokeWidth: 2)))
+              : IconButton(
+                  tooltip: _notifEnabled ? 'Notificações ativas' : 'Ativar notificações de vencimento',
+                  icon: Icon(
+                    _notifEnabled ? Icons.notifications_active : Icons.notifications_none,
+                    color: _notifEnabled ? kPurple : kMuted,
+                  ),
+                  onPressed: _toggleNotifications,
+                ),
           // Filtro por categoria
           if (cats.isNotEmpty) PopupMenuButton<String?>(
             icon: Icon(Icons.filter_list, color: _filterCat != null ? kPurple : kMuted),

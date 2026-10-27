@@ -208,7 +208,99 @@ jobs:
           PYEOF
 
       - name: Build Web
-        run: flutter build web --release --base-href "/financas-flutter/" --dart-define=SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: flutter build web --release --base-href "/financas-flutter/" --dart-define=SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }} --dart-define=VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
+
+      - name: Injetar Push Notifications no service worker e index.html
+        run: |
+          python3 << 'PYEOF'
+          import os, re
+
+          # ── 1. Adiciona handlers de push ao flutter_service_worker.js ──────
+          sw_path = 'build/web/flutter_service_worker.js'
+          if os.path.exists(sw_path):
+              push_handler = (
+                  '\n\n// ── Web Push handlers (injetado pelo CI) ──\n'
+                  'self.addEventListener("push", function(event) {\n'
+                  '  var data = {};\n'
+                  '  try { data = event.data ? event.data.json() : {}; } catch(e) {}\n'
+                  '  var title = data.title || "Financas Pessoais";\n'
+                  '  var opts = {\n'
+                  '    body: data.body || "",\n'
+                  '    icon: "/financas-flutter/icons/Icon-192.png",\n'
+                  '    badge: "/financas-flutter/icons/Icon-192.png",\n'
+                  '    tag: data.tag || "financas-alert",\n'
+                  '    renotify: true,\n'
+                  '    vibrate: [200, 100, 200],\n'
+                  '  };\n'
+                  '  event.waitUntil(self.registration.showNotification(title, opts));\n'
+                  '});\n'
+                  '\n'
+                  'self.addEventListener("notificationclick", function(event) {\n'
+                  '  event.notification.close();\n'
+                  '  event.waitUntil(\n'
+                  '    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(cs) {\n'
+                  '      for (var c of cs) { if (c.url.includes("/financas-flutter/") && "focus" in c) return c.focus(); }\n'
+                  '      if (clients.openWindow) return clients.openWindow("/financas-flutter/");\n'
+                  '    })\n'
+                  '  );\n'
+                  '});\n'
+              )
+              with open(sw_path, 'a') as f:
+                  f.write(push_handler)
+              print('push handlers adicionados ao service worker')
+
+          # ── 2. Injeta helpers JS de subscribe/unsubscribe no index.html ────
+          index_path = 'build/web/index.html'
+          if os.path.exists(index_path):
+              html = open(index_path).read()
+              push_script = (
+                  '\n  <script>\n'
+                  '  window.subscribeToPush = function(vapidPublicKey, onSuccess, onError) {\n'
+                  '    function urlB64ToUint8Array(b) {\n'
+                  '      var pad = "=".repeat((4 - b.length % 4) % 4);\n'
+                  '      var raw = atob((b + pad).replace(/-/g, "+").replace(/_/g, "/"));\n'
+                  '      var arr = new Uint8Array(raw.length);\n'
+                  '      for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);\n'
+                  '      return arr;\n'
+                  '    }\n'
+                  '    if (!("Notification" in window) || !navigator.serviceWorker) {\n'
+                  '      return onError("nao suportado");\n'
+                  '    }\n'
+                  '    Notification.requestPermission().then(function(perm) {\n'
+                  '      if (perm !== "granted") return onError("permissao negada");\n'
+                  '      navigator.serviceWorker.ready.then(function(reg) {\n'
+                  '        reg.pushManager.subscribe({\n'
+                  '          userVisibleOnly: true,\n'
+                  '          applicationServerKey: urlB64ToUint8Array(vapidPublicKey)\n'
+                  '        }).then(function(sub) {\n'
+                  '          var k = sub.getKey("p256dh");\n'
+                  '          var a = sub.getKey("auth");\n'
+                  '          function b64(buf) {\n'
+                  '            return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))\n'
+                  '              .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=/g, "");\n'
+                  '          }\n'
+                  '          onSuccess({ endpoint: sub.endpoint, p256dh: b64(k), auth: b64(a) });\n'
+                  '        }).catch(function(e) { onError(String(e)); });\n'
+                  '      });\n'
+                  '    });\n'
+                  '  };\n'
+                  '  window.unsubscribeFromPush = function(onDone) {\n'
+                  '    if (!navigator.serviceWorker) return onDone(null);\n'
+                  '    navigator.serviceWorker.ready.then(function(reg) {\n'
+                  '      reg.pushManager.getSubscription().then(function(sub) {\n'
+                  '        if (!sub) return onDone(null);\n'
+                  '        var ep = sub.endpoint;\n'
+                  '        sub.unsubscribe().then(function() { onDone(ep); }).catch(function() { onDone(null); });\n'
+                  '      });\n'
+                  '    });\n'
+                  '  };\n'
+                  '  </script>\n'
+              )
+              if 'subscribeToPush' not in html:
+                  html = html.replace('</body>', push_script + '</body>')
+              open(index_path, 'w').write(html)
+              print('helpers JS de push injetados no index.html')
+          PYEOF
 
       - name: Deploy para GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -231,6 +323,10 @@ jobs:
       - name: Deploy Edge Functions
         run: |
           supabase functions deploy admin-users --project-ref cogmxnspkpqycygqlvwu --no-verify-jwt
+          supabase functions deploy send-due-alerts --project-ref cogmxnspkpqycygqlvwu --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_EMAIL: ${{ secrets.VAPID_EMAIL }}

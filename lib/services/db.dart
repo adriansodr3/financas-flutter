@@ -931,6 +931,37 @@ class DB {
     }).toList();
   }
 
+  // ── Push Subscriptions ───────────────────────────────────
+
+  static Future<void> savePushSubscription({
+    required String endpoint,
+    required String p256dh,
+    required String auth,
+  }) async {
+    await _sb.from('push_subscriptions').upsert({
+      'user_id': uid,
+      'endpoint': endpoint,
+      'p256dh': p256dh,
+      'auth': auth,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'endpoint');
+  }
+
+  static Future<void> deletePushSubscription(String endpoint) async {
+    await _sb.from('push_subscriptions')
+        .delete()
+        .eq('user_id', uid)
+        .eq('endpoint', endpoint);
+  }
+
+  static Future<bool> hasPushSubscription() async {
+    final data = await _sb.from('push_subscriptions')
+        .select('id')
+        .eq('user_id', uid)
+        .limit(1);
+    return (data as List).isNotEmpty;
+  }
+
   // ── Session validation ────────────────────────────────────
 
   static Future<bool> isSessionValid() async {
