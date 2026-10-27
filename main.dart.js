@@ -55463,7 +55463,7 @@ if(m==null)m=0
 q=q.d
 s=q>0?m/q*100:0
 q=A.aZ(r,r,B.k,r,r,new A.aX(B.ry[B.e.bq(a,8)],r,r,r,r,r,B.bl),r,8,r,r,r,r,r,8)
-o=A.bq(o.h(p,"category_name"))
+o=A.bq(o.h(p,"name"))
 return new A.az(B.Kf,A.be(A.b([q,B.nr,A.b6(A.aa(o==null?"\u2014":o,r,B.aG,r,r,B.a1m,r,r),1),A.aa(B.c.a8(s,0)+"%",r,r,r,r,B.bv,r,r)],t.p),B.m,B.h,B.l),r)},
 $S:352}
 A.C4.prototype={
