@@ -1,32 +1,18 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:async';
-import 'dart:convert';
-// dart:html está disponível no Flutter web
-// ignore: depend_on_referenced_packages
 import 'dart:js' as js;
 
 /// Gerencia Web Push Notifications para a PWA.
 class PushService {
-  // VAPID public key injetada no build via --dart-define
   static const _vapidPublicKey =
       String.fromEnvironment('VAPID_PUBLIC_KEY', defaultValue: '');
-
-  /// Verifica se o browser suporta Web Push.
-  static bool get isSupported {
-    try {
-      return js.context.hasProperty('Notification') &&
-          js.context.hasProperty('navigator') &&
-          (js.context['navigator'] as js.JsObject)
-              .hasProperty('serviceWorker');
-    } catch (_) {
-      return false;
-    }
-  }
 
   /// Retorna o estado atual da permissão: 'granted', 'denied', 'default'.
   static String get permissionState {
     try {
-      return js.context['Notification']['permission'] as String? ?? 'default';
+      final n = js.context['Notification'];
+      if (n == null) return 'default';
+      return (n as js.JsObject)['permission'] as String? ?? 'default';
     } catch (_) {
       return 'default';
     }
@@ -35,52 +21,42 @@ class PushService {
   /// Solicita permissão e inscreve o dispositivo no push.
   /// Retorna o mapa da subscription (endpoint, p256dh, auth) ou null se falhar.
   static Future<Map<String, String>?> subscribe() async {
-    if (_vapidPublicKey.isEmpty || !isSupported) return null;
+    if (_vapidPublicKey.isEmpty) return null;
 
     final completer = Completer<Map<String, String>?>();
 
     try {
-      // Chama a função JS definida no index.html
       js.context.callMethod('subscribeToPush', [
         _vapidPublicKey,
-        js.allowInterop((js.JsObject? result) {
-          if (result == null) {
-            completer.complete(null);
-            return;
-          }
+        js.allowInterop((result) {
+          if (result == null) { completer.complete(null); return; }
           try {
+            final r = result as js.JsObject;
             completer.complete({
-              'endpoint': result['endpoint'] as String,
-              'p256dh': result['p256dh'] as String,
-              'auth': result['auth'] as String,
+              'endpoint': r['endpoint'] as String,
+              'p256dh':   r['p256dh']   as String,
+              'auth':     r['auth']     as String,
             });
-          } catch (e) {
-            completer.complete(null);
-          }
+          } catch (_) { completer.complete(null); }
         }),
-        js.allowInterop((String error) {
-          completer.complete(null);
-        }),
-      ]);
-    } catch (e) {
-      return null;
-    }
-
-    return completer.future.timeout(const Duration(seconds: 15),
-        onTimeout: () => null);
-  }
-
-  /// Cancela a inscrição do dispositivo.
-  static Future<String?> unsubscribe() async {
-    if (!isSupported) return null;
-    final completer = Completer<String?>();
-    try {
-      js.context.callMethod('unsubscribeFromPush', [
-        js.allowInterop((String? endpoint) => completer.complete(endpoint)),
+        js.allowInterop((Object? _) { completer.complete(null); }),
       ]);
     } catch (_) {
       return null;
     }
+
+    return completer.future.timeout(const Duration(seconds: 20),
+        onTimeout: () => null);
+  }
+
+  /// Cancela a inscrição do dispositivo. Retorna o endpoint removido ou null.
+  static Future<String?> unsubscribe() async {
+    final completer = Completer<String?>();
+    try {
+      js.context.callMethod('unsubscribeFromPush', [
+        js.allowInterop((Object? ep) => completer.complete(ep as String?)),
+      ]);
+    } catch (_) { return null; }
     return completer.future.timeout(const Duration(seconds: 10),
         onTimeout: () => null);
   }

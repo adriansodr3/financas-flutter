@@ -36,7 +36,6 @@ class FixedScreenState extends State<FixedScreen> {
   }
 
   Future<void> _checkNotifStatus() async {
-    if (!PushService.isSupported) return;
     final has = await DB.hasPushSubscription();
     if (mounted) setState(() => _notifEnabled = has);
   }
@@ -241,7 +240,7 @@ class FixedScreenState extends State<FixedScreen> {
         title: const Text('Gastos e Receitas Fixos', style: TextStyle(fontSize: 16)),
         actions: [
           // Toggle de notificações de vencimento
-          if (kIsWeb && PushService.isSupported)
+          if (kIsWeb)
             _notifLoading
               ? const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
